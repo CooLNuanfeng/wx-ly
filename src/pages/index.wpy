@@ -1,0 +1,370 @@
+<template>
+  <view class="container">
+      <view class="warp scrollPage">
+          <location @search.user="searchFn"/>
+          <view class="grids-warp">
+              <view class="{{gridsFixed ? 'grid-fixed':''}}">
+                  <gird></gird>
+              </view>
+          </view>
+          <ad hidden="{{!adshow}}"></ad>
+          <view class="index-container">
+              <view class="index-title">最新发布</view>
+              <view class="index-list" hidden="{{loading}}">
+                  <view wx:if="{{listData && listData.length}}">
+                      <view class="index-flex" @tap="goDetail({{item.id}})" wx:for="{{listData}}" wx:key>
+                          <view class="item-img">
+                              <image src="../images/{{themeimg}}{{item.type}}.png"></image>
+                              <text wx:if="{{item.type=='home'}}">{{item.formdata.typeJson.type==0? '房屋出租':'房屋出售'}}</text>
+                              <text wx:else>{{item.typename}}</text>
+                              <!-- <text wx:elif="{{item.type=='job'}}">职位招聘</text>
+                              <text wx:elif="{{item.type=='sale'}}">打折促销</text>
+                              <text wx:elif="{{item.type=='car'}}">车辆交易</text>
+                              <text wx:elif="{{item.type=='find'}}">寻人寻物</text>
+                              <text wx:elif="{{item.type=='food'}}">美食推荐</text>
+                              <text wx:elif="{{item.type=='friend'}}">良缘在线</text>
+                              <text wx:elif="{{item.type=='pet'}}">宠物领养</text>
+                              <text wx:elif="{{item.type=='edu'}}">教育培训</text>
+                              <text wx:elif="{{item.type=='other'}}">其他消息</text> -->
+                          </view>
+                          <view class="item-info">
+                              <view class="item-title">
+                                  <text wx:if="{{item.formdata.images}}">图</text>
+                                  {{item.title}}
+                              </view>
+                              <view class="item-desc">
+                                  <text>{{item.subtitle}}</text>
+                                  <text>发布者: {{item.nickname}}</text>
+                              </view>
+                              <view class="item-price">
+                                  <text wx:if="{{item.type == 'job'}}" class="price">￥<text class="price-number">{{item.formdata.jobprice}}</text>元起/月</text>
+                                  <text wx:elif="{{item.type == 'home'}}" class="price">￥<text class="price-number">{{item.formdata.price}}</text>{{item.formdata.typeJson.type==0? '元/月':'万元'}}</text>
+                                  <text wx:elif="{{item.type == 'car'}}" class="price">￥<text class="price-number">{{item.formdata.price}}</text>万元</text>
+                                  <text wx:elif="{{item.type == 'food'||item.type == 'edu'}}" class="price">￥<text class="price-number">{{item.formdata.price}}</text>元/人</text>
+                                  <text wx:elif="{{item.type == 'pet'}}" class="price">￥<text class="price-number">{{item.formdata.price}}</text>元/只</text>
+                                  <text wx:else></text>
+                                  <text class="pub-time">{{item.updatedAt}}</text>
+                              </view>
+                          </view>
+                      </view>
+                  </view>
+                  <view wx:elif>
+                      <empty type="index"></empty>
+                  </view>
+                  <!-- <view class="index-flex" @tap="goDetail('{id:1,type:job}')">
+                      <view class="item-img"><image src="../images/{{themeimg}}car.png"></image></view>
+                      <view class="item-info">
+                          <view class="item-title"><text>图</text>新平佳节快乐姐姐加快拉倒了杰拉德</view>
+                          <view class="item-desc"><text>简单 方便</text><text>发布者: 一只小绵羊</text></view>
+                          <view class="item-price">
+                              <text class="price">￥<text class="price-number">123</text>元</text>
+                              <text class="pub-time">2017-10-08</text>
+                          </view>
+                      </view>
+                  </view> -->
+              </view>
+              <v-loading :loading.sync="loading" :loadend.sync="loadend"></v-loading>
+          </view>
+          <footer/>
+      </view>
+      <view class="publish-btn">
+          <image src="../images/help.png" @tap="contact"></image>
+          <image src="../images/publish.png" @tap="publish"></image>
+      </view>
+      <toast></toast>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Location from '../components/location'
+  import Grid from '../components/grid'
+  import Ad from '../components/ad'
+  import Empty from '../components/empty'
+  import Footer from '../components/footer'
+  import Toast from '../components/toast';
+  import Loading from '../components/loading';
+
+  import AV from '../utils/av-weapp-min.js';
+
+  export default class Index extends wepy.page {
+      config = {
+          enablePullDownRefresh : true
+      };
+      components = {
+          'location' : Location,
+          'gird' : Grid,
+          'ad' : Ad,
+          'footer' : Footer,
+          'empty' : Empty,
+          'toast': Toast,
+          'v-loading' : Loading,
+      };
+      data = {
+          adshow : false,
+          gridsArr : null,
+          themeimg : '',
+          listData : null,
+          loading : false,
+          listNumber : 100,
+          gridsFixed : false,
+          // scrollTop : 0,
+      };
+      methods = {
+          goDetail(id){
+              wx.navigateTo({
+                  url : 'detail?id='+id
+              });
+          },
+          publish(){
+              if(!this.userInfo){
+                  wx.navigateTo({
+                      url : 'autho'
+                  });
+              }else{
+                  wx.navigateTo({
+                      url : 'publish'
+                  });
+              }
+          },
+          contact(){
+              wx.navigateTo({
+                  url : 'contact'
+              });
+          },
+          searchFn(params){
+              this.$invoke('toast', 'show', {
+                  message: '请输入搜索内容',
+              });
+          },
+          // scroll(ev){
+          //     if(ev.detail.scrollTop > 140){
+          //         this.gridsFixed = true;
+          //     }else{
+          //         this.gridsFixed = false;
+          //     }
+          //     // if(ev.detail.scrollTop < -100){
+          //     //     this.fetch();
+          //     // }
+          //     console.log('scroll',ev.detail.scrollTop);
+          // }
+      };
+      onLoad(){
+          var userinfo = wx.getStorageSync('userInfo');
+          // console.log(userInfo);
+          this.checklogin();
+          if(!userinfo){
+              console.log('go autho');
+              wx.navigateTo({
+                  url : 'autho'
+              });
+              return;
+          }else{
+              this.$parent.globalData.userInfo = userinfo;
+              this.$parent.globalData.userNick = userinfo;
+          }
+
+          this.adshow = this.$parent.globalData.ads;
+          this.themeimg = this.$parent.globalData.themeimg;
+          this.gridsArr = this.$parent.globalData.gridsArr;
+          this.$parent.getCurrentUserNotice(function(){
+              this.fetch();
+          })
+
+      };
+      onShow(){
+          var vm = this;
+          var refresh = vm.$parent.globalData.refresh;
+          // console.log(refresh,'refresh');
+          if(refresh){
+              vm.fetch();
+              vm.$parent.globalData.refresh = false;
+          }
+      };
+      onPageScroll(ev){
+          if(ev.scrollTop > 140){
+              this.gridsFixed = true;
+          }else{
+              this.gridsFixed = false;
+          }
+      };
+      onPullDownRefresh(){
+          this.fetch();
+      };
+      fetch(){
+          var vm = this;
+          var query = new AV.Query('NewsList');
+          var now = new Date();
+          query.lessThanOrEqualTo('updatedAt', now);
+          query.descending('updatedAt');
+          query.limit(vm.listNumber);
+          vm.loading = true;
+          query.find().then(function(data){
+              vm.loading = false;
+              // console.log('query data',data);
+              vm.makeParam(data);
+              wx.stopPullDownRefresh();
+          }).catch(function(err){
+              // console.log(err);
+              vm.loading = false;
+              vm.$invoke('toast', 'show', {
+                  message: '服务异常，请稍后重试',
+              });
+              vm.$apply();
+          });
+      };
+      makeParam(data){
+          var len = data.length;
+          var arr = [];
+          for(let i=0; i<len; i++){
+              let json = data[i].attributes;
+              json.id = data[i].id;
+              json.updatedAt = this.$parent.timeFormate(data[i].updatedAt);
+              arr.push(json);
+          }
+          this.listData = arr;
+          this.$apply();
+          // console.log(this.listData);
+      };
+      checklogin(){
+          var userinfo = wx.getStorageSync('userInfo');
+          if(!userinfo){
+              wx.navigateTo({
+                  url : 'autho'
+              });
+          }
+      }
+  }
+</script>
+
+
+<style lang="scss">
+@import "../sass/_mixin.scss";
+.scrollPage{
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+.grids-warp{
+    height: 315rpx;
+}
+.grid-fixed{
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    box-shadow: 0 0 15rpx rgba(0,0,0,.3);
+}
+.index-container{
+    padding-top: 10rpx;
+}
+.index-title{
+    height: 70rpx;
+    line-height: 70rpx;
+    padding-left: 20rpx;
+    font-size: 30rpx;
+    color: $fontBlack;
+    background: #fff;
+    border-bottom: 1rpx solid #ebebeb;
+}
+.index-flex{
+    display: flex;
+    padding: 10rpx 20rpx 0;
+    background: #fff;
+    &:last-child{
+        .item-info{
+            border-bottom: 0;
+        }
+    }
+}
+.item-img{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    width: 120rpx;
+    padding-left: 10rpx;
+    overflow: hidden;
+    image{
+        width: 80rpx;
+        height: 80rpx;
+    }
+    text{
+        font-size: 20rpx;
+        color: $themeColor;
+    }
+}
+.item-info{
+    flex: 1;
+    display: flex;
+    padding-bottom: 20rpx;
+    padding-right: 10rpx;
+    flex-direction: column;
+    justify-content: space-between;
+    border-bottom: 1rpx solid #f4f4f4;
+}
+.item-title{
+    padding-top: 10rpx;
+    font-size: 32rpx;
+    color: $fontBlack;
+    @include text-overflow(2);
+    text{
+        margin-right: 10rpx;
+        padding: 0 5rpx;
+        font-size: 22rpx;
+        color: $themeColor;
+        border: 1rpx solid $themeColor;
+    }
+}
+.item-desc{
+    padding: 5rpx 0;
+    font-size: 24rpx;
+    color: $gray;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    text{
+        flex: 1;
+        @include text-overflow(1);
+        &:last-child{
+            padding-left: 20rpx;
+            text-align: right;
+        }
+    }
+}
+.item-price{
+    display: flex;
+    height: 30rpx;
+    justify-content: space-between;
+    align-items: center;
+}
+.price{
+    font-size: 26rpx;
+    color: $red;
+}
+.price-number{
+    font-size: 36rpx;
+}
+.pub-time{
+    font-size: 26rpx;
+    color: $gray;
+}
+.publish-btn{
+    position: fixed;
+    right: 20rpx;
+    bottom: 20rpx;
+    width: 100rpx;
+    padding: 10rpx;
+    z-index: 10;
+    box-sizing: border-box;
+    image{
+        width: 80rpx;;
+        height: 80rpx;
+        margin-top: 10rpx;
+        opacity: .6;
+    }
+}
+</style>

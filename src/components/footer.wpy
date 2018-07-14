@@ -1,0 +1,26 @@
+<template >
+    <view class="footer">欢迎来到 {{cityname}}</view>
+</template>
+
+<script>
+import wepy from 'wepy'
+export default class Footer extends wepy.component{
+    data = {
+        cityname : '',
+    }
+    onLoad(){
+        // console.log(this.$parent.$parent.globalData);
+        this.cityname = this.$parent.$parent.globalData.cityname;
+    }
+}
+</script>
+
+<style lang="scss">
+@import "../sass/_mixin.scss";
+.footer{
+    padding: 160rpx 0 130rpx;
+    font-size: 20rpx;
+    text-align: center;
+    color: $gray;
+}
+</style>

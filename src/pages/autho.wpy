@@ -1,0 +1,73 @@
+<!-- 授权用户信息 -->
+<template>
+    <view class="autho-page">
+        <image src="../images/logo.jpg"></image>
+        <text>{{cityname}}需要获取您的头像和昵称信息，请确认</text>
+        <button class="autho-btn" type="primary" open-type="getUserInfo" @getuserinfo="getUserInfo">确认授权</button>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+
+export default class Autho extends wepy.page {
+    data = {
+        cityname : '',
+    }
+    onLoad(){
+        this.cityname = this.$parent.globalData.cityname;
+    }
+    methods = {
+        getUserInfo: function(e) {
+            let userinfo = e.detail.userInfo;
+            this.$parent.globalData.userNick = userinfo;
+            console.log(userinfo,'autho');
+            this.$parent.getCurrentUserNotice(function(){
+                console.log('callback');
+                wx.setStorage({
+                    key: "userInfo",
+                    data: userinfo,
+                    success : function(){
+                        console.log('go index');
+                        wx.navigateTo({
+                            url : 'index'
+                        });
+                    },
+                    fail: function(){
+                        console.log('fail');
+                    }
+                });
+            });
+
+        }
+    }
+}
+</script>
+
+<style lang="scss">
+@import "../sass/_mixin.scss";
+page{
+    height: 100%;
+    background: #fff;
+}
+.autho-page{
+    display: flex;
+    padding-top: 200rpx;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    image{
+        width: 150rpx;
+        height: 150rpx;
+        border-radius: 75rpx;
+    }
+    text{
+        padding: 50rpx 0;
+        font-size: 30rpx;
+        color: #111;
+    }
+}
+.autho-btn{
+    width: 500rpx;
+}
+</style>

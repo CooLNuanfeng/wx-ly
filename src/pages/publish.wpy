@@ -1,0 +1,729 @@
+<template>
+    <view class="publish-container">
+        <view class="publish-input">
+            <view>
+                <image src="../images/{{themeimg}}title.png"></image>
+                <input type="text" placeholder="请输入发布内容的标题或主题" maxlength="100" placeholder-class="input-placeholder" @input="titleChange" value="{{title}}">
+            </view>
+        </view>
+        <view class="publish-input">
+            <view>
+                <image src="../images/{{themeimg}}subtitle.png"></image>
+                <input type="text" placeholder="请输入关于发布内容的 2-3个关键词,空格分割" maxlength="20" placeholder-class="input-placeholder" @input="subTitleChange" value="{{subtitle}}">
+            </view>
+        </view>
+        <view class="publish-input">
+            <view>
+                <image src="../images/{{themeimg}}phone.png"></image>
+                <input type="number" placeholder="请输入您的手机号" maxlength="11" placeholder-class="input-placeholder" value="{{phone}}" @input="phoneChange">
+            </view>
+        </view>
+        <view class="publish-input">
+            <view>
+                <image src="../images/{{themeimg}}user.png"></image>
+                <input type="text" placeholder="请输入您的姓名或姓氏" maxlength="8" placeholder-class="input-placeholder" value="{{publishername}}" @input="nameChange">
+            </view>
+        </view>
+        <view class="publish-type">
+            <view class="publish-notice">请选择发布所属分类</view>
+            <view class="publish-tags">
+
+                <view wx:for="{{gridsArr}}" wx:key wx:if="{{index<5}}" class="{{item.type==type?'active':''}}" @tap="tap({{item}})"><text>{{item.name}}</text></view>
+                <!-- <view class="{{type=='job'?'active':''}}" @tap="tap('job')"><text>招聘信息</text></view>
+                <view class="{{type=='sale'?'active':''}}" @tap="tap('sale')"><text>打折促销</text></view>
+                <view class="{{type=='home'?'active':''}}" @tap="tap('home')"><text>房屋租售</text></view>
+                <view class="{{type=='car'?'active':''}}" @tap="tap('car')"><text>车辆交易</text></view>
+                <view class="{{type=='find'?'active':''}}" @tap="tap('find')"><text>寻人寻物</text></view> -->
+            </view>
+            <view class="publish-tags">
+                <view wx:for="{{gridsArr}}" wx:key wx:if="{{index>4}}" class="{{item.type==type?'active':''}}" @tap="tap({{item}})"><text>{{item.name}}</text></view>
+                <!-- <view class="{{type=='food'?'active':''}}" @tap="tap('food')"><text>美食推荐</text></view>
+                <view class="{{type=='friend'?'active':''}}" @tap="tap('friend')"><text>良缘在线</text></view>
+                <view class="{{type=='pet'?'active':''}}" @tap="tap('pet')"><text>宠物领养</text></view>
+                <view class="{{type=='edu'?'active':''}}" @tap="tap('edu')"><text>教育培训</text></view>
+                <view class="{{type=='other'?'active':''}}" @tap="tap('other')"><text>其他消息</text></view> -->
+            </view>
+        </view>
+        <view class="publish-form">
+            <view class="publish-notice">请填写相关信息 <text class="publish-tips">(<text>*</text>为必填项)</text></view>
+
+            <!-- 招聘信息 -->
+            <jobform hidden="{{type == 'job'? false:true}}" @getJobForm.user="getForm"></jobform>
+            <!-- 打折促销 -->
+            <saleform hidden="{{type == 'sale'? false:true}}" @getSaleForm.user="getForm"></saleform>
+            <!-- 房屋租售 -->
+            <homeform hidden="{{type == 'home'? false:true}}" @getHomeForm.user="getForm"></homeform>
+            <!-- 车辆交易 -->
+            <carform hidden="{{type == 'car'? false:true}}" @getCarForm.user="getForm"></carform>
+            <!-- 寻人寻物 -->
+            <findform hidden="{{type == 'find'? false:true}}" @getFindForm.user="getForm"></findform>
+            <!-- 美食推荐 -->
+            <foodform  hidden="{{type == 'food'? false:true}}" @getFoodForm.user="getForm"></foodform>
+            <!-- 良缘在线 -->
+            <friendform hidden="{{type == 'friend'? false:true}}" @getFriendForm.user="getForm"></friendform>
+            <!-- 宠物领养 -->
+            <petform hidden="{{type == 'pet'? false:true}}" @getPetForm.user="getForm"></petform>
+            <!-- 教育培训 -->
+            <eduform hidden="{{type == 'edu'? false:true}}" @getEduForm.user="getForm"></eduform>
+            <!-- 其他消息 -->
+            <otherform hidden="{{type == 'other'? false:true}}" @getOtherForm.user="getForm"></otherform>
+        </view>
+        <view class="publish-btn">
+            <view class="btn-save" @tap="priview">预 览</view>
+            <!-- <view class="btn-save" @tap="saveMe">保存</view> -->
+            <view class="btn-submit" @tap="submit">发 布</view>
+        </view>
+        <toast />
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import JobForm from '../components/jobform';
+import SaleForm from '../components/saleform';
+import HomeForm from '../components/homeform';
+import CarForm from '../components/carform';
+import FindForm from '../components/findform';
+import FoodForm from '../components/foodform';
+import FriendForm from '../components/friendform';
+import PetForm from '../components/petform';
+import EduForm from '../components/eduform';
+import OtherForm from '../components/otherform';
+import Toast from '../components/toast';
+
+
+import AV from '../utils/av-weapp-min.js';
+import NewsList from '../models/newslist';
+
+const qiniuUploader = require("../utils/qiniuUploader");
+const genToken = require('../utils/getUpToken.js').genToken;
+const options = {
+  "scope": "images",
+  "deadline": Date.parse(new Date()) + 1800,
+  "mimeLimit":"image/*"
+}
+const uploadToken = genToken('-2rQ7jMWwI1PHe_i8c60WOgx7isexE1SI-K5eSPx', 'uWkWvwDwucTA9ekkbSWMDQPMBt4t8KYtFRkkvrMW', options);
+// console.log(uploadToken)
+
+export default class Publish extends wepy.page {
+    data = {
+        themeimg : '',
+        gridsArr : null,
+        title : '', //require
+        subtitle : '', //require
+        phone : '', //require
+        publishername : '',
+        type : 'job', //require
+        typename : '职位招聘',
+        formdata : null, //各个表单的信息
+    }
+    components = {
+        jobform : JobForm,
+        saleform : SaleForm,
+        homeform : HomeForm,
+        carform : CarForm,
+        findform : FindForm,
+        foodform : FoodForm,
+        friendform : FriendForm,
+        petform : PetForm,
+        eduform : EduForm,
+        otherform : OtherForm,
+        toast: Toast
+    }
+    onLoad(){
+        var vm = this;
+        vm.themeimg = vm.$parent.globalData.themeimg;
+        vm.gridsArr = vm.$parent.globalData.gridsArr;
+    }
+    onShow(){
+        if(this.$parent.globalData.previewBack){
+            this.ajaxSend();
+        }
+    }
+    methods = {
+        tap(item){
+            this.type = item.type;
+            this.typename = item.name;
+        },
+        getForm(data){
+            this.formdata = data;
+        },
+        titleChange(evt){
+            this.title = evt.detail.value;
+        },
+        subTitleChange(evt){
+            this.subtitle = evt.detail.value;
+        },
+        phoneChange(evt){
+            this.phone = evt.detail.value;
+        },
+        nameChange(evt){
+            this.publishername = evt.detail.value;
+        },
+        submit(){
+            
+            var fetchType = this.type+'Fetch';
+            this.$broadcast(fetchType);
+            var result = this.checkFormInfo();
+            if(result.flag){
+                // console.log('from child form',this.formdata);
+                this.ajaxSend();
+            }else{
+                this.$invoke('toast', 'show', {
+                    message: result.info,
+                });
+            }
+        },
+        priview(){
+            var fetchType = this.type+'Fetch';
+            this.$broadcast(fetchType);
+            var result = this.checkFormInfo();
+
+            if(result.flag){
+                this.previewSend();
+            }else{
+                this.$invoke('toast', 'show', {
+                    message: result.info,
+                });
+            }
+        },
+        // saveMe(){
+        //     var vm = this,fetchType = vm.type+'Fetch';
+        //     vm.$broadcast(fetchType);
+        //     var result = vm.checkFormInfo();
+        //     if(result.flag){
+        //         wx.showModal({
+        //           title: '提示',
+        //           content: '将当前信息保存到本地，最多保存10条信息，请勿将本地缓存清除，如清除保存的信息将会一并清除，建议检查无误就赶紧发布吧(*^__^*)',
+        //           success: function(res) {
+        //             if(res.confirm) {
+        //                 vm.saveMeSend();
+        //             }else if (res.cancel) {
+        //
+        //             }
+        //           }
+        //         });
+        //     }else{
+        //         vm.$invoke('toast', 'show', {
+        //             message: result.info,
+        //         });
+        //     }
+        // }
+    }
+    // saveMeSend(){
+    //     let vm = this;
+    //     let userNick = vm.$parent.globalData.userNick;
+    //     let userInfo = vm.$parent.globalData.userInfo;
+    //     var data = {
+    //         nickname : userNick.nickName,
+    //         uid : userInfo.objectId,
+    //         title : vm.title, //require
+    //         subtitle : vm.subtitle,
+    //         publishername : vm.publishername,
+    //         phone : vm.phone, //require
+    //         type : vm.type, //require
+    //         typename : vm.typename, //分类名称
+    //         formdata : vm.formdata, //表单的信息
+    //     }
+    //     console.log('save',JSON.stringify(data));
+    //
+    // }
+    previewSend(){
+        let vm = this;
+        let userNick = vm.$parent.globalData.userNick;
+        let userInfo = vm.$parent.globalData.userInfo;
+        var data = {
+            nickname : userNick.nickName,
+            uid : userInfo.objectId,
+            title : vm.title, //require
+            subtitle : vm.subtitle,
+            publishername : vm.publishername,
+            phone : vm.phone, //require
+            type : vm.type, //require
+            typename : vm.typename, //分类名称
+            formdata : vm.formdata, //表单的信息
+        }
+        vm.$parent.globalData.previewData = data;
+        wx.navigateTo({
+            url : 'preview'
+        });
+    }
+    uploadImgs(data){
+        let filePaths = data.formdata.images;
+        let len = filePaths.length;
+        var vm = this,imgArr = [],domain = vm.$parent.globalData.domain;
+        var promiseArr = [];
+        // console.log(filePaths,'filePaths',domain);
+        for(let i=0; i<len; i++){
+            var prom = new Promise(function(resolve, reject){
+                    qiniuUploader.upload(filePaths[i], (res) => {
+                        imgArr.push(domain+res.imageURL);
+                        resolve();
+                    }, (error) => {
+                          reject();
+                    },{
+                        region: 'ECN',
+                        uptoken: uploadToken
+                    });
+            });
+            promiseArr.push(prom);
+        }
+
+        Promise.all(promiseArr).then(function(){
+            // console.log(imgArr,'imgArr');
+            data.formdata.images = imgArr;
+            vm.saveData(data);
+        }).catch(function(err){
+            // console.log(err);
+            vm.hideLoading();
+            vm.$invoke('toast', 'show', {
+                message: '图片上传失败，请重试',
+            });
+        })
+
+        // for(let i=0;i<len;i++){
+        //
+        //     qiniuUploader.upload(filePaths[i], (res) => {
+        //       imgArr.push(domain+res.imageURL);
+        //       if(i == len-1){
+        //           // console.log(i,'end',imgArr);
+        //           data.formdata.images = imgArr;
+        //           vm.saveData(data);
+        //       }
+        //     }, (error) => {
+        //           console.log('error: ' + error);
+        //     },{
+        //         region: 'ECN',
+        //         uptoken: uploadToken
+        //     });
+        // }
+
+    }
+    saveData(data){
+        // console.log(data,'send data');
+        // return;
+        var onelist = new NewsList(),vm = this;
+        onelist.set('nickname',data.nickname);
+        onelist.set('uid',data.uid);
+        onelist.set('title',data.title);
+        onelist.set('subtitle',data.subtitle);
+        onelist.set('subtitle',data.subtitle);
+        onelist.set('phone',data.phone);
+        onelist.set('publishername',data.publishername);
+        onelist.set('type',data.type);
+        onelist.set('typename',data.typename);
+        onelist.set('formdata',data.formdata);
+        onelist.save().then(function(list){
+            vm.hideLoading();
+            vm.$parent.globalData.previewBack = false;
+            vm.$parent.globalData.refresh = true;
+            vm.$parent.globalData.curUserPublishNum += 1;
+            wx.redirectTo({
+                url : 'success'
+            });
+        }).catch(function(err){
+            // console.log(err);
+            vm.hideLoading();
+            vm.$invoke('toast', 'show', {
+                message: '发布失败，请重试',
+            });
+        });
+    }
+    ajaxSend(){
+        let vm = this;
+        let userNick = vm.$parent.globalData.userNick;
+        let userInfo = vm.$parent.globalData.userInfo;
+        var data = {
+            nickname : userNick.nickName,
+            uid : userInfo.objectId,
+            title : vm.title, //require
+            subtitle : vm.subtitle,
+            publishername : vm.publishername,
+            phone : vm.phone, //require
+            type : vm.type, //require
+            typename : vm.typename, //分类名称
+            formdata : vm.formdata, //表单的信息
+        }
+        vm.showLoading();
+        if(vm.formdata.images){
+            vm.uploadImgs(data);
+        }else{
+            vm.saveData(data);
+        }
+
+    };
+    showLoading(){
+        wx.showLoading({
+            title : '提交中...'
+        });
+    }
+    hideLoading(){
+        setTimeout(function(){
+          wx.hideLoading();
+        },100);
+    }
+    checkFormInfo(){
+        var json = null;
+        json = this.checkHeadeInfo(); //检测头部分
+        if(json.flag){
+            switch (this.type) {
+                case 'job':
+                    json = this.checkJobForm();
+                    break;
+                case 'sale':
+                    json = this.checkSaleForm();
+                    break;
+                case 'home':
+                    json = this.checkHomeForm();
+                    break;
+                case 'car':
+                    json = this.checkCarForm();
+                    break;
+                case 'find':
+                    json = this.checkFindForm();
+                    break;
+                case 'food':
+                    json = this.checkFoodForm();
+                    break;
+                case 'friend':
+                    json = this.checkFriendForm();
+                    break;
+                case 'pet':
+                    json = this.checkPetForm();
+                    break;
+                case 'edu':
+                    json = this.checkEduForm();
+                    break;
+                case 'other':
+                    json = this.checkOtherForm();
+                    break;
+            }
+        }else{
+            this.$invoke('toast', 'show', {
+                message: json.info,
+            });
+        }
+        return json;
+    };
+    //检测 头部分
+    checkHeadeInfo(){
+        var json = {
+            flag : true,
+            info : ''
+        };
+        var phoneReg = /^0{0,1}1[3456789]{1}[0-9]{9}$/ig;
+        if(!this.title){
+            json.flag = false;
+            json.info = '标题不能为空';
+            return json;
+        }
+        if(!this.subtitle){
+            json.flag = false;
+            json.info = '副标题不能为空';
+            return json;
+        }
+        if(!this.phone){
+            json.flag = false;
+            json.info = '手机号不能为空';
+            return json;
+        }
+        if(!phoneReg.test(this.phone)){
+            json.flag = false;
+            json.info = '手机号格式不正确';
+            return json;
+        }
+        return json;
+    }
+    checkJobForm(){
+        var json = {
+            flag : true,
+            info : ''
+        };
+        var jobData = this.formdata;
+        if(!jobData.jobname){
+            json.flag = false;
+            json.info = '请填写招聘职位';
+            return json;
+        }
+        if(!jobData.jobprice){
+            json.flag = false;
+            json.info = '请填写职位月薪';
+            return json;
+        }
+        if(!jobData.number){
+            json.flag = false;
+            json.info = '请填写招聘人数';
+            return json;
+        }
+        if(!jobData.address){
+            json.flag = false;
+            json.info = '请填写招聘地址';
+            return json;
+        }
+        if(!jobData.companyName){
+            json.flag = false;
+            json.info = '请填写公司名称';
+            return json;
+        }
+        return json;
+    }
+    checkSaleForm(){
+        var json = {
+            flag : true,
+            info : ''
+        };
+        var saleData = this.formdata;
+        if(!saleData.address){
+            json.flag = false;
+            json.info = '请填写活动地址';
+            return json;
+        }
+        return json;
+    }
+    checkHomeForm(){
+        var json = {
+            flag : true,
+            info : ''
+        };
+        var homeData = this.formdata;
+        if(!homeData.address){
+            json.flag = false;
+            json.info = '请填写房屋地址';
+            return json;
+        }
+        if(!homeData.price){
+            json.flag = false;
+            json.info = '请填写房屋价格';
+            return json;
+        }
+        return json;
+    }
+    checkCarForm(){
+        var json = {
+            flag : true,
+            info : ''
+        };
+        var carData = this.formdata;
+        if(!carData.carname){
+            json.flag = false;
+            json.info = '请填写车辆型号/名称';
+            return json;
+        }
+        if(!carData.price){
+            json.flag = false;
+            json.info = '请填写车辆价格';
+            return json;
+        }
+        if(!carData.mileage){
+            json.flag = false;
+            json.info = '请填写行驶里程';
+            return json;
+        }
+        return json;
+    }
+    checkFindForm(){
+        var json = {
+            flag : true,
+            info : ''
+        };
+        var findData = this.formdata;
+        if(!findData.address){
+            json.flag = false;
+            json.info = '请填写丢失地点';
+            return json;
+        }
+        return json;
+    }
+    checkFoodForm(){
+        var json = {
+            flag : true,
+            info : ''
+        };
+        var foodData = this.formdata;
+        if(!foodData.price){
+            json.flag = false;
+            json.info = '请填写人均消费';
+            return json;
+        }
+        if(!foodData.address){
+            json.flag = false;
+            json.info = '请填写美食地点';
+            return json;
+        }
+        return json;
+    }
+    checkFriendForm(){
+        var json = {
+            flag : true,
+            info : ''
+        };
+        var friendData = this.formdata;
+        if(friendData.aboutMeArr.length < 2 && !friendData.aboutMeArr[0]){
+            json.flag = false;
+            json.info = '请填写关于我信息';
+            return json;
+        }
+        if(friendData.hopeTaArr.length < 2 && !friendData.hopeTaArr[0]){
+            json.flag = false;
+            json.info = '请填写关于Ta信息';
+            return json;
+        }
+        return json;
+    }
+    checkPetForm(){
+        var json = {
+            flag : true,
+            info : ''
+        };
+        var petData = this.formdata;
+        if(!petData.category){
+            json.flag = false;
+            json.info = '请填写宠物类别';
+            return json;
+        }
+        if(!petData.price){
+            json.flag = false;
+            json.info = '请填写宠物价格';
+            return json;
+        }
+        return json;
+    }
+    checkEduForm(){
+        var json = {
+            flag : true,
+            info : ''
+        };
+        var eduData = this.formdata;
+        if(!eduData.price){
+            json.flag = false;
+            json.info = '请填写培训价格';
+            return json;
+        }
+        if(!eduData.address){
+            json.flag = false;
+            json.info = '请填写培训地点';
+            return json;
+        }
+        return json;
+    }
+    checkOtherForm(){
+        var json = {
+            flag : true,
+            info : ''
+        };
+        var otherData = this.formdata;
+        if(otherData.otherInfoArr.length < 2 && !otherData.otherInfoArr[0]){
+            json.flag = false;
+            json.info = '请填写信息';
+            return json;
+        }
+        return json;
+    }
+}
+</script>
+
+<style lang="scss">
+@import "../sass/_mixin.scss";
+.input-placeholder{
+    color: #ddd;
+}
+.publish-container{
+
+}
+.publish-input{
+    position: relative;
+    padding: 0 20rpx;
+    background: #fff;
+    view{
+        border-bottom: 1rpx solid #ebebeb;
+    }
+    image{
+        position: absolute;
+        top: 20rpx;
+        left: 15rpx;
+        width: 40rpx;
+        height: 40rpx;
+    }
+    input{
+        width: 100%;
+        height: 80rpx;
+        padding: 20rpx 0;
+        padding-left: 50rpx;
+        font-size: 30rpx;
+        color: $fontBlack;
+        box-sizing: border-box;
+    }
+}
+.publish-type{
+    padding: 0 20rpx 5rpx;
+    background: #fff;
+}
+.publish-notice{
+    line-height: 80rpx;
+    font-size: 30rpx;
+    color: $fontBlack;
+    font-weight: bold;
+}
+.publish-tips{
+    padding: 0 10rpx;
+    font-size: 24rpx;
+    font-weight: normal;
+    color: $gray;
+    text{
+        padding: 0 6rpx;
+        color: $red;
+        font-size: 14rpx;
+    }
+}
+.publish-tags{
+    display: flex;
+    padding-bottom: 20rpx;
+    &:last-child{
+        border-bottom: 1rpx solid #ebebeb;
+    }
+    view{
+        flex: 1;
+        text{
+            padding: 10rpx 15rpx;
+            border-radius: 4rpx;
+            font-size: 28rpx;
+            color: $fontBlack;
+        }
+        &.active{
+            text{
+                color: #fff;
+                background: $themeColor;
+            }
+        }
+    }
+}
+.publish-form{
+    padding: 0 20rpx;
+    background: #fff;
+}
+.publish-btn{
+    display: flex;
+    padding: 20rpx;
+    flex-direction: column;
+    background: #fff;
+    view{
+        flex: 1;
+        height: 80rpx;
+        font-size: 28rpx;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 10rpx;
+        border-radius: 6rpx;
+        box-sizing: border-box;
+    }
+    .btn-save{
+        border: 1rpx solid $themeColor;
+        color: $themeColor;
+    }
+    .btn-submit{
+        color: #fff;
+        background: $themeColor;
+    }
+}
+</style>

@@ -1,0 +1,381 @@
+<template>
+    <view class="container">
+        <view class="warp category">
+            <view class="category-title">
+                <view class="title-l"><text>当前：</text> {{curname}}</view>
+                <view class="title-r {{!slideUp?'active':''}}"><image src="../images/arrow.png" @tap="slideChange"></image></view>
+            </view>
+            <view hidden="{{slideUp}}" class="category-grid">
+                <view wx:for="{{gridsArr}}" wx:key class="{{curTab== item.type?'active':''}}" @tap="tabChange({{item.type}},{{item.name}})">{{item.name}}</view>
+                <!-- <view class="{{curTab=='job'?'active':''}}" @tap="tabChange('job')">招聘信息</view>
+                <view class="{{curTab=='sale'?'active':''}}" @tap="tabChange('sale')">打折促销</view>
+                <view class="{{curTab=='home'?'active':''}}" @tap="tabChange('home')">房屋租售</view>
+                <view class="{{curTab=='car'?'active':''}}" @tap="tabChange('car')">车辆交易</view>
+                <view class="{{curTab=='find'?'active':''}}" @tap="tabChange('find')">寻人寻物</view>
+                <view class="{{curTab=='food'?'active':''}}" @tap="tabChange('food')">美食推荐</view>
+                <view class="{{curTab=='friend'?'active':''}}" @tap="tabChange('friend')">良缘在线</view>
+                <view class="{{curTab=='pet'?'active':''}}" @tap="tabChange('pet')">宠物领养</view>
+                <view class="{{curTab=='edu'?'active':''}}" @tap="tabChange('edu')">教育培训</view>
+                <view class="{{curTab=='other'?'active':''}}" @tap="tabChange('other')">其他消息</view> -->
+            </view>
+            <view wx:if="{{!listData.length && !loading}}">
+                <empty type="publish"></empty>
+                <footer/>
+            </view>
+            <view wx:elif>
+                <view class="category-nav" wx:if="{{navlist}}">
+                    <nav-bar :navlist.sync="navlist"></nav-bar>
+                </view>
+                <scroll-view class="category-body {{navlist?'category-body-pt':''}}" scroll-y="true" scroll-top="{{scrollTop}}" lower-threshold="150" @scrolltolower="scrollFetch" @scroll="scroll">
+                    <view class="category-lists">
+                        <news-list :lists.sync="listData"></news-list>
+                        <v-loading :loading.sync="loading" :loadend.sync="loadend"></v-loading>
+                    </view>
+                    <footer/>
+                </scroll-view>
+            </view>
+        </view>
+        <view class="category-btn">
+            <image src="../images/publish.png" @tap="publish"></image>
+            <image hidden="{{!goTopStauts}}" src="../images/top.png" @tap="goTop"></image>
+        </view>
+        <toast></toast>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import NavBar from '../components/navbar';
+import ListNews from '../components/listnews';
+import Empty from '../components/empty'
+import Footer from '../components/footer'
+import Loading from '../components/loading';
+import Toast from '../components/toast';
+
+
+import AV from '../utils/av-weapp-min.js';
+
+export default class Category extends wepy.page {
+    config = {
+        // onReachBottomDistance : 100
+    };
+    components = {
+        'nav-bar' : NavBar,
+        'news-list': ListNews,
+        'empty' : Empty,
+        'footer' : Footer,
+        'v-loading': Loading,
+        'toast' : Toast
+    }
+    data = {
+        gridsArr : null,
+        curname : '',
+        curTab : '',
+        curType : null,
+        slideUp : true,
+        loading : false,
+        loadend : false,
+        navlist : null,
+        listData: [],
+        initLists : [],
+        scrollTop : 0,
+        goTopStauts : 0,
+        page : 1,
+        pageSize : 50,
+    }
+    onLoad(options) {
+        this.curTab = options.id;
+        this.curname = options.name;
+        this.gridsArr = this.$parent.globalData.gridsArr;
+        this.fetch();
+    };
+    // onReachBottom(){
+    //     console.log('aaaa');
+    // };
+    methods = {
+        slideChange(){
+            this.slideUp = !this.slideUp;
+        },
+        tabChange(type,name){
+            this.curTab = type;
+            this.curname = name;
+            this.slideUp = !this.slideUp;
+            this.navlist = null;
+            this.fetch();
+        },
+        scroll(ev){
+            if(ev.detail.scrollTop > 300){
+                this.goTopStauts = 1;
+            }else{
+                this.goTopStauts = 0;
+            }
+            this.scrollTop = ev.detail.scrollTop;
+        },
+        scrollFetch(){
+            var vm = this;
+            var query = new AV.Query('NewsList');
+            if(vm.loadend || vm.loading){
+                return;
+            }
+            vm.loading = true;
+            query.equalTo('type',vm.curTab);
+            query.descending('updatedAt');
+            query.limit(vm.pageSize);
+            query.skip((vm.page-1)*vm.pageSize);
+            query.find().then(function(data){
+                // console.log(data,'scrollFetch');
+                vm.loading = false;
+                if(data.length == 0){
+                    vm.loadend = false;
+                    vm.$apply();
+                    return;
+                }
+                if(data.length < vm.pageSize){
+                    vm.loadend = true;
+                }
+                vm.page++;
+                vm.makeParam(data);
+            }).catch(function(err){
+                // console.log(err);
+                vm.loading = false;
+                vm.$invoke('toast', 'show', {
+                    message: '服务异常，请稍后重试',
+                });
+                vm.$apply();
+            });
+        },
+        goTop(){
+            this.scrollTop = 0;
+        },
+        publish(){
+            wx.navigateTo({
+                url : 'publish'
+            });
+        }
+    };
+    events = {
+        navChange(params){
+            // console.log(params,'from child');
+            this.scrollTop = 0;
+            this.goTopStauts = 0;
+            this.filterList(params);
+        }
+    }
+    fetch(){
+        var vm = this;
+        var query = new AV.Query('NewsList');
+        vm.loading = true;
+        vm.initLists.length = 0;
+        vm.listData.length = 0;
+        query.equalTo('type',vm.curTab);
+        query.descending('updatedAt');
+        query.limit(vm.pageSize);
+        query.find().then(function(data){
+            // console.log(data,'fetch');
+            vm.loading = false;
+            if(data.length == 0){
+                vm.loadend = false;
+                vm.$apply();
+                return;
+            }
+            if(data.length < vm.pageSize){
+                vm.loadend = true;
+            }
+            vm.page++;
+            vm.makeParam(data);
+        }).catch(function(err){
+            // console.log(err);
+            vm.loading = false;
+            vm.$invoke('toast', 'show', {
+                message: '服务异常，请稍后重试',
+            });
+            vm.$apply();
+        });
+    }
+
+    checkUserAttentions(arr){
+        var curUserAttentions = this.$parent.globalData.curUserAttention;
+        for(let i=0; i<arr.length; i++){
+            if(curUserAttentions.indexOf(arr[i].id)!= -1){
+                arr[i].attentionStatus = 1;
+            }
+        }
+    }
+    filterList(params){
+        // console.log(params,'filter params',this.curTab);
+        var arr=[],lists = this.initLists, tab = this.curTab;
+        if(params == 'all'){
+            this.listData = lists;
+            return;
+        }
+        if(this.curTab == 'job' || this.curTab == 'sale' || this.curTab == 'home'){
+            for(var i=0; i<lists.length; i++){
+                if(lists[i].formdata[tab+'Type'].id == params.id){
+                    arr.push(lists[i]);
+                }
+            }
+            this.listData = arr;
+        }
+    }
+    makeParam(data){
+        var len = data.length;
+        // var arr = [];
+        for(let i=0; i<len; i++){
+            let json = data[i].attributes;
+            json.id = data[i].id;
+            json.attentionStatus = 0;
+            json.updatedAt = this.$parent.timeFormate(data[i].updatedAt);
+            this.listData.push(json);
+        }
+        if(this.curTab == 'job' || this.curTab == 'sale' || this.curTab == 'home'){
+            this.curType = 'all';
+            this.makeNavlist(this.listData);
+        }else{
+            this.navlist = null;
+        }
+        this.checkUserAttentions(this.listData);
+        this.initLists = this.listData;
+        // this.allLists = arr;
+        this.$apply();
+    }
+    makeNavlist(data){
+        // console.log('navlist',data);
+        var tab = this.curTab;
+        var obj = {},len = data.length,arr=[];
+        for(let i=0; i<len; i++){
+            var hasown = false;
+            let json = data[i].formdata[tab+'Type'];
+            if(!arr.length){
+                arr.push(json);
+            }else{
+                for(let j=0; j<arr.length; j++){
+                    if(arr[j].name == json.name){
+                        hasown = true;
+                    }
+                }
+                if(!hasown){
+                    arr.push(json);
+                }
+            }
+        }
+        this.navlist = arr;
+        // console.log(this.navlist,'object assign');
+    }
+}
+</script>
+
+<style lang="scss">
+@import "../sass/_mixin.scss";
+.category{
+    padding-top: 60rpx;
+    .nav-container{
+        top : 61rpx;
+    }
+}
+.category-title{
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60rpx;
+    padding: 0 20rpx;
+    background: #fff;
+    // border-bottom: 1rpx solid #ebebeb;
+    z-index: 5;
+}
+.category-nav{
+    position: fixed;
+    top: 60rpx;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    height: 80rpx;
+}
+.title-l{
+    color: $fontBlack;
+    font-weight: bold;
+    font-size: 32rpx;
+    text{
+        color: $themeColor;
+        &::before{
+            content : '';
+            display: inline-block;
+            width: 5rpx;
+            height:  25rpx;
+            background: $themeColor;
+            margin-right: 10rpx;
+        }
+    }
+}
+.title-r{
+    font-size: 24rpx;
+    color: $gray;
+    image{
+        width: 30rpx;
+        height: 30rpx;
+        vertical-align: middle;
+        transition: all .1s linear;
+    }
+    &.active{
+        image{
+            transform: rotate(180deg);
+        }
+    }
+}
+.category-grid{
+    position: fixed;
+    top: 60rpx;
+    left: 0;
+    right: 0;
+    padding: 10rpx 0 15rpx;
+    z-index: 10;
+    background: #fff;
+    box-shadow: 0 5rpx 5rpx rgba(0,0,0,.2);
+    view{
+        width: 20%;
+        height: 40rpx;
+        padding: 8rpx 0;
+        display: inline-block;
+        text-align: center;
+        line-height: 40rpx;
+        font-size: 30rpx;
+        color: $fontBlack;
+        &.active{
+            color: $themeColor;
+            font-weight: bold;
+        }
+    }
+}
+.category-body{
+    position: absolute;
+    top: 61rpx;
+    right: 0;
+    left: 0;
+    bottom: 0;
+}
+.category-body-pt{
+    // padding-top: 81rpx;
+    top: 141rpx;
+}
+.category-lists{
+    min-height: 750rpx;
+}
+.category-btn{
+    position: fixed;
+    right: 20rpx;
+    bottom: 20rpx;
+    width: 100rpx;
+    padding: 10rpx;
+    z-index: 10;
+    box-sizing: border-box;
+    image{
+        width: 80rpx;;
+        height: 80rpx;
+        margin-top: 10rpx;
+        opacity: .6;
+    }
+}
+</style>

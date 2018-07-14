@@ -1,0 +1,57 @@
+<template>
+    <view class="other-form">
+        <view class="lable-control-list">
+            <view class="label-flex">
+                <text>描述信息: <text class="label-require">*</text><text class="label-small">(请分条例填写，点右侧添加条例)</text></text>
+                <view><image src="../images/add-item.png" @tap="addItem()"></image></view>
+            </view>
+            <view class="label-add" wx:for="{{otherInfoArr}}" wx:key>
+                <input type="text" placeholder="请分条输入相关内容" maxlength="150" placeholder-class="input-placeholder" value="{{item}}" @input="itemInput({{index}})">
+                <view wx:if="{{index>0}}" @tap="deleteItem({{index}})"><image src="../images/delete-item.png"></image></view>
+            </view>
+        </view>
+        <view class="publish-notice">上传图片</view>
+        <uploadform @uploadEnd.user="uploadChange" @uploadDel.user="uploadChange"></uploadform>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import imgUploadForm from './imgupload';
+
+export default class OtherForm extends wepy.component{
+    data = {
+        'otherInfoArr' : [''],
+        'uploadImgs' : null,
+    };
+    components = {
+        'uploadform' : imgUploadForm
+    };
+    methods = {
+        addItem(){
+            this.otherInfoArr.push('');
+        },
+        itemInput(index,evt){
+            this.otherInfoArr[index] = evt.detail.value;
+        },
+        deleteItem(index){
+            this.otherInfoArr.splice(index,1);
+        },
+        uploadChange(imgs){
+            // console.log('upload change');
+            this.uploadImgs = imgs;
+        }
+    };
+    events = {
+        otherFetch(){
+            var json = {};
+            json.otherInfoArr = this.otherInfoArr;
+            json.images = this.uploadImgs;
+            this.$emit('getOtherForm',json);
+        }
+    };
+}
+</script>
+
+<style lang="scss">
+</style>

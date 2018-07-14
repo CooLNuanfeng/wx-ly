@@ -1,0 +1,99 @@
+<template>
+    <view class="grids">
+        <view class="grids-flex">
+            <view wx:for="{{gridsArr}}" wx:if="{{index<5}}" wx:key class="grids-item" @tap="tap({{item.type}},{{item.name}})">
+                <image src="../images/{{themeimg}}{{item.type}}.png"></image>
+                <text>{{item.name}}</text>
+            </view>
+            <!-- <view class="grids-item" @tap="tap('sale')">
+                <image src="../images/{{themeimg}}sale.png"></image>
+                <text>打折促销</text>
+            </view>
+            <view class="grids-item" @tap="tap('home')">
+                <image src="../images/{{themeimg}}home.png"></image>
+                <text>房屋租售</text>
+            </view>
+            <view class="grids-item" @tap="tap('car')">
+                <image src="../images/{{themeimg}}car.png"></image>
+                <text>车辆交易</text>
+            </view>
+            <view class="grids-item" @tap="tap('find')">
+                <image src="../images/{{themeimg}}find.png"></image>
+                <text>寻人寻物</text>
+            </view> -->
+        </view>
+        <view class="grids-flex">
+            <view wx:for="{{gridsArr}}" wx:if="{{index>4}}" wx:key class="grids-item" @tap="tap({{item.type}},{{item.name}})">
+                <image src="../images/{{themeimg}}{{item.type}}.png"></image>
+                <text>{{item.name}}</text>
+            </view>
+            <!-- <view class="grids-item" @tap="tap('friend')">
+                <image src="../images/{{themeimg}}friend.png"></image>
+                <text>相亲交友</text>
+            </view>
+            <view class="grids-item" @tap="tap('pet')">
+                <image src="../images/{{themeimg}}pet.png"></image>
+                <text>宠物领养</text>
+            </view>
+            <view class="grids-item" @tap="tap('edu')">
+                <image src="../images/{{themeimg}}edu.png"></image>
+                <text>教育培训</text>
+            </view>
+            <view class="grids-item" @tap="tap('other')">
+                <image src="../images/{{themeimg}}other.png"></image>
+                <text>其他消息</text>
+            </view> -->
+        </view>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+
+export default class Grid  extends wepy.component{
+    data = {
+        themeimg : '',
+        gridsArr : null,
+    };
+    methods = {
+        tap(params,name){
+            wx.navigateTo({
+                url : 'category?id='+params+'&name='+name
+            });
+        }
+    };
+    onLoad(){
+         this.themeimg = this.$parent.$parent.globalData.themeimg;
+         this.gridsArr = this.$parent.$parent.globalData.gridsArr;
+    }
+}
+</script>
+
+<style lang="scss">
+@import "../sass/_mixin.scss";
+.grids{
+    padding: 20rpx 0;
+    color: $fontBlack;
+    background: #fff;
+}
+.grids-flex{
+    display: flex;
+}
+.grids-item{
+    flex: 1;
+    display: flex;
+    padding: 20rpx;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text{
+        font-size: 26rpx;
+        color: $themeColor;
+    }
+    image{
+        width: 50rpx;
+        height: 50rpx;
+        margin-bottom: 10rpx;
+    }
+}
+</style>

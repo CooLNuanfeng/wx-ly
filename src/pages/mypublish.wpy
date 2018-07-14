@@ -1,0 +1,740 @@
+<template>
+    <view class="container">
+        <view wx:if="{{!lists.length && !loading}}">
+            <empty type="publish"></empty>
+            <footer/>
+        </view>
+        <view wx:elif>
+            <nav-bar wx:if="{{navlists.length}}" :navlist.sync="navlists"></nav-bar>
+            <scroll-view class="scrollPage" scroll-y="true" scroll-top="{{scrollTop}}" lower-threshold="150" @scrolltolower="scrollFetch" @scroll="scroll">
+                <view class="warp attention">
+                    <view class="attention-body">
+                        <view class="attention-list">
+
+                            <view wx:for="{{lists}}" wx:key class="attention-item {{item.status == 1?'active':''}} {{item.status==-1?'delete':''}}" @touchstart="touchstart" @touchmove="touchmove({{item}},{{index}})" @tap="goDetail({{item}})">
+                                <view class="item-att-select {{item.selected?'active':''}}" @tap.stop="selectItem({{index}})"><text class="select-icon"></text></view>
+                                <view class="item-att-main">
+                                    <view class="item-att-l">
+                                        <view class="item-att-title">
+                                            <text wx:if="{{item.formdata.images}}">图</text>
+                                            {{item.title}}
+                                        </view>
+                                        <view class="item-att-body">
+                                            <view class="item-att-info">
+                                                <view>{{item.subtitle}}</view>
+                                                <view class="item-att-price">
+                                                    <text wx:if="{{item.type == 'job'}}" class="price">￥<text class="price-number">{{item.formdata.jobprice}}</text>元起/月</text>
+                                                    <text wx:elif="{{item.type == 'home'}}" class="price">￥<text class="price-number">{{item.formdata.price}}</text>{{item.formdata.typeJson.type==0? '元/月':'万元'}}</text>
+                                                    <text wx:elif="{{item.type == 'car'}}" class="price">￥<text class="price-number">{{item.formdata.price}}</text>万元</text>
+                                                    <text wx:elif="{{item.type == 'food'||item.type == 'edu'}}" class="price">￥<text class="price-number">{{item.formdata.price}}</text>元/人</text>
+                                                    <text wx:elif="{{item.type == 'pet'}}" class="price">￥<text class="price-number">{{item.formdata.price}}</text>元/只</text>
+                                                </view>
+                                                <view class="item-att-time"><text>发布者: {{item.nickname}}</text> <text>{{item.updatedAt}}</text></view>
+                                            </view>
+                                            <view class="item-att-btn">
+                                                <view class="item-att-type">
+                                                    <image src="../images/{{themeimg}}{{item.type}}.png"></image>
+                                                </view>
+                                                <view @tap.stop="doPhone({{item.phone}})">
+                                                    <image src="../images/{{themeimg}}phone.png"></image> 电话
+                                                </view>
+                                            </view>
+                                        </view>
+                                    </view>
+                                    <view class="item-att-r" @tap.stop="delItem({{item}},{{index}})"><text>删除</text></view>
+                                </view>
+                            </view>
+
+
+                            <!-- <view class="attention-item {{status == 1?'active':''}} {{status==-1?'delete':''}}" @touchstart="touchstart" @touchmove.stop="touchmove" @tap="goDetail('{id:1,type:job}')">
+                                <view class="item-att-select active"><text class="select-icon"></text></view>
+                                <view class="item-att-main">
+                                    <view class="item-att-l">
+                                        <view class="item-att-title"><text>图</text>距离可垃圾地方李经理卡机法律框架拉动房价看了监考老师放假了是就发即可拉伸减肥的爱是理解对方考虑</view>
+                                        <view class="item-att-body">
+                                            <view class="item-att-info">
+                                                <view>简单 方便 快捷</view>
+                                                <view class="item-att-price">￥<text>1234</text>元</view>
+                                                <view class="item-att-time"><text>发布者: 小程序</text> <text>2017-10-20</text></view>
+                                            </view>
+                                            <view class="item-att-btn">
+                                                <view class="item-att-type">
+                                                    <image src="../images/{{themeimg}}sale.png"></image>
+                                                </view>
+                                                <view>
+                                                    <image src="../images/{{themeimg}}phone.png"></image> 电话
+                                                </view>
+                                            </view>
+                                        </view>
+                                    </view>
+                                    <view class="item-att-r">删除</view>
+                                </view>
+                            </view> -->
+
+                        </view>
+                    </view>
+                    <v-loading :loading.sync="loading" :loadend.sync="loadend"></v-loading>
+                </view>
+                <footer wx:if="{{lists.length}}"></footer>
+                <view class="attention-btn" hidden="{{showBar ? false : true}}">
+                    <view class="select-l">
+                        <view @tap="doAllSelect({{selectAll}})">
+                            <text class="select-icon {{selectAll?'active':''}}"></text>全选
+                        </view>
+                    </view>
+                    <view class="select-m" @tap="cancel">取消</view>
+                    <view class="select-r {{selectStatus?'active':''}}" @tap="deleteSelect">删除</view>
+                </view>
+                <view class="attention-btns">
+                    <image src="../images/delete.png" @tap="edit"></image>
+                    <image hidden="{{!goTopStauts}}" src="../images/top.png" @tap="goTop"></image>
+                </view>
+            </scroll-view>
+        </view>
+        <toast></toast>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import NavBar from '../components/navbar';
+import Loading from '../components/loading';
+import Empty from '../components/empty'
+import Footer from '../components/footer';
+import Toast from '../components/toast';
+
+import AV from '../utils/av-weapp-min.js';
+// import NewsList from '../models/newslist';
+
+export default class MyPublish extends wepy.page {
+    components = {
+        'empty' : Empty,
+        'nav-bar' : NavBar,
+        'v-loading' : Loading,
+        'footer' : Footer,
+        'toast': Toast,
+    };
+    data = {
+        uid : '',
+        navlists : [],
+        curNavType : 'all',
+        lists : [],
+        initLists : null, //初始 list数据
+        themeimg : '',
+        showBar: false, //是否显示底部删除操作
+        selectStatus : false, //是否有选中
+        selectAll : false, //全选
+        startX : 0,
+        startY: 0,
+        loading : false,
+        loadend : false,
+        page : 1, //当前页
+        pageSize : 20, //每页显示多少条
+        scrollTop : 0, //回到顶部
+        goTopStauts : 0, //回到顶部按钮
+        ajaxPedding : false, //ajax 防连击
+    }
+    methods = {
+        touchstart(e){
+            this.startX = e.changedTouches[0].clientX;
+            this.startY = e.changedTouches[0].clientY;
+        },
+        touchmove(item,index,e){
+            if(item.status==1){
+                return;
+            }
+            var vm = this,
+            // index = e.currentTarget.dataset.index,//当前索引
+            startX = vm.startX,//开始X坐标
+            startY = vm.startY,//开始Y坐标
+            touchMoveX = e.changedTouches[0].clientX,//滑动变化坐标
+            touchMoveY = e.changedTouches[0].clientY,//滑动变化坐标
+            //获取滑动角度
+            angle = vm.angle({ X: startX, Y: startY }, { X: touchMoveX, Y: touchMoveY });
+            //滑动超过80度角 return
+            if (Math.abs(angle) > 80) return;
+            if (touchMoveX > startX){//右滑
+              // vm.initStatus();
+              vm.lists[index].status = 0;
+            }else {//左滑
+              vm.initStatus(0);
+              vm.lists[index].status = -1;
+            }
+        },
+        goDetail(item){
+            // console.log(item);
+            if(item.status==0){
+                wx.navigateTo({
+                    url : 'detail?id='+item.id
+                });
+            }
+
+        },
+        selectItem(index){
+            this.lists[index].selected = !this.lists[index].selected;
+            this.checkSelectAll();
+            this.checkHasSelected();
+        },
+        delItem(item,index){
+            // this.delArrIds = [item.id];
+            // console.log(item.pid,item.id);
+            this.delFetch([item.id]);
+        },
+        doAllSelect(flag){
+            this.selectAllStatus(!flag);
+        },
+        edit(){
+            this.initStatus(1);
+            this.showBar = true;
+        },
+        goTop(){
+            this.scrollTop = 0;
+            // console.log('go to top');
+        },
+        scroll(ev){
+            if(ev.detail.scrollTop > 500){
+                this.goTopStauts = 1;
+            }else{
+                this.goTopStauts = 0;
+            }
+            this.scrollTop = ev.detail.scrollTop;
+        },
+        cancel(){
+            this.initStatus(0);
+            this.selectAllStatus(false);
+            this.selectAll = false;
+            this.showBar = false;
+        },
+        deleteSelect(){
+            //ajax
+            if(this.selectStatus){
+                var arr = [];
+                // this.delArrIds = [];
+                for(let i=0; i<this.lists.length; i++){
+                    if(this.lists[i].selected){
+                        // var json = {
+                        //     index : i,
+                        //     id : this.lists[i].id
+                        // }
+                        arr.push(this.lists[i].id);
+                        // this.delArrIds.push(this.lists[i].id);
+                    }
+                }
+                this.delFetch(arr);
+            }
+        }
+    }
+    onLoad(){
+        this.themeimg = this.$parent.globalData.themeimg;
+        this.uid = this.$parent.globalData.userInfo.objectId;
+        this.fetch();
+    }
+
+    events = {
+        navChange(params){
+            if(params.type){
+                this.curNavType = params.type;
+            }else{
+                this.curNavType = 'all';
+            }
+            this.filterList();
+        }
+    }
+    fetch(){
+        var vm = this,query = new AV.Query('NewsList');
+        vm.loading = true;
+        vm.showLoading();
+        query.equalTo('uid', this.uid);
+        query.descending('updatedAt');
+        query.limit(vm.pageSize);
+        query.find().then(function(data){
+            // console.log(data,'data');
+            vm.loading = false;
+            vm.hideLoading();
+            if(data.length == 0){
+                vm.loadend = false;
+                vm.$apply();
+                return;
+            }
+            if(data.length < vm.pageSize){
+                vm.loadend = true;
+            }
+            vm.page++;
+            vm.makeParam(data);
+        }).catch(function(err){
+            // console.log(err);
+            vm.loading = false;
+            vm.$invoke('toast', 'show', {
+                message: '服务异常，请稍后重试',
+            });
+        });
+    }
+    scrollFetch(){
+        var vm = this,query = new AV.Query('NewsList');
+        if(vm.loadend || vm.loading){
+            return;
+        }
+        // console.log('scrollFetch');
+        vm.loading = true;
+        query.equalTo('uid', this.uid);
+        query.descending('updatedAt');
+        query.limit(vm.pageSize);
+        query.skip((vm.page-1)*vm.pageSize);
+        query.find().then(function(data){
+            // console.log(data,'data');
+            vm.loading = false;
+            if(data.length == 0){
+                vm.loadend = false;
+                vm.$apply();
+                return;
+            }
+            if(data.length < vm.pageSize){
+                vm.loadend = true;
+            }
+            vm.page++;
+            vm.makeParam(data);
+        }).catch(function(err){
+            // console.log(err);
+            vm.loading = false;
+            vm.$invoke('toast', 'show', {
+                message: '服务异常，请稍后重试',
+            });
+        });
+    }
+    delFetch(arr){
+        // console.log(arr,'del');
+        var objectsArr = [], //newslist
+            objectsUserArr = [], //user attention list
+            vm = this,
+            userAttentPromise,
+            publishPromise,
+            delidArr = [],
+            publishnum = vm.$parent.globalData.curUserPublishNum,
+            curUserAttentions = vm.$parent.globalData.curUserAttention;
+        if(vm.ajaxPedding){
+            return;
+        }
+        vm.ajaxPedding = true;
+        vm.showLoading();
+        for(let i=0; i<arr.length; i++){
+            var oid = vm.getUserAttentOid(arr[i]),delItem,attentItem;
+
+            delItem = AV.Object.createWithoutData('NewsList', arr[i]);
+            delidArr.push(arr[i]);
+            objectsArr.push(delItem);
+
+            if(oid){
+                attentItem = AV.Object.createWithoutData('UserAttentions', oid);
+                objectsUserArr.push(attentItem);
+            }
+        }
+
+        publishPromise = AV.Object.destroyAll(objectsArr).then(function() {
+            for(let i=0; i<delidArr.length; i++){
+                for(let j=0; j<vm.initLists.length;j++){
+                    if(vm.initLists[j].id == delidArr[i]){
+                        vm.initLists.splice(j,1);
+                    }
+                }
+            }
+            vm.$parent.globalData.curUserPublishNum = publishnum - delidArr.length;
+            vm.$parent.globalData.refresh = true;
+            return AV.Object.save();
+        }).catch(function(err){
+        });
+        if(objectsUserArr.length){
+            userAttentPromise = AV.Object.destroyAll(objectsUserArr).then(function() {
+                vm.$parent.globalData.curUserAttention = vm.delFromArr(curUserAttentions,delidArr);
+                vm.$parent.globalData.attrefresh = true;
+                // console.log('aa',vm.$parent.globalData.curUserAttention);
+                return AV.Object.save();
+            }).catch(function(err){
+            });
+        }else{
+            // console.log('bb');
+            userAttentPromise = Promise.resolve();
+        }
+
+
+        Promise.all([publishPromise,userAttentPromise]).then(function(){
+           vm.filterList();
+           vm.initNavList();
+
+           vm.initStatus(0);
+           vm.selectAllStatus(false);
+           vm.showBar = false;
+           vm.ajaxPedding = false;
+           vm.hideLoading();
+           vm.$apply();
+        }).catch(function(err){
+            // console.log(err);
+            vm.ajaxPedding = false;
+            vm.hideLoading();
+            vm.$invoke('toast', 'show', {
+                message: '服务异常，请稍后重试',
+            });
+        })
+
+    }
+    initStatus(status){
+        for(var i=0; i<this.lists.length; i++){
+            this.lists[i].status = status;
+        }
+    }
+    selectAllStatus(flag){
+        for(var i=0; i<this.lists.length; i++){
+            this.lists[i].selected = flag;
+        }
+        this.selectAll = flag;
+        this.selectStatus = flag;
+
+    }
+    checkHasSelected(){ //检查是否有选中
+        var flag = false;
+        for(var i=0; i<this.lists.length; i++){
+            if(this.lists[i].selected){
+                flag = true;
+                break;
+            }
+        }
+        if(flag){
+            this.selectStatus = true;
+        }else{
+            this.selectStatus = false;
+        }
+    }
+    checkSelectAll(){ //检查是否全选
+        var flag = true;
+        for(var i=0; i<this.lists.length; i++){
+            if(!this.lists[i].selected){
+                flag = false;
+                break;
+            }
+        }
+        if(flag){
+            this.selectAll = true;
+        }else{
+            this.selectAll = false;
+        }
+    }
+    filterList(){
+        var filterArr = [],type = this.curNavType;
+        this.lists = this.initLists;
+        if(!this.lists.length){
+            this.loadend = false;
+        }
+        if(type == 'all'){
+            return ;
+        }else{
+            for(var i=0; i<this.lists.length; i++){
+                if(this.lists[i].type == type){
+                    filterArr.push(this.lists[i]);
+                }
+            }
+            this.lists = filterArr;
+        }
+    }
+    makeParam(data){
+        // var curUserAttentions = this.$parent.globalData.curUserAttention;
+        for(let i=0; i<data.length; i++){
+            var listjson = data[i].attributes;
+            listjson.id = data[i].id;
+            listjson.status = 0; //状态
+            listjson.selected = false; //是否选中
+            listjson.updatedAt = this.$parent.timeFormate(data[i].updatedAt);
+            this.lists.push(listjson);
+            // if(curUserAttentions.indexOf(listjson.pid)!=-1){
+            //     this.lists.push(listjson);
+            // }
+        }
+        this.initLists = this.lists;
+        this.initNavList();
+        // console.log(this.lists,'list');
+        this.$apply();
+    }
+    initNavList(){
+        // console.log(lists,'initNavList');
+        var navArr = [];
+        for(var i=0; i<this.initLists.length; i++){
+            var navjson = {};
+            navjson.type = this.initLists[i].type;
+            navjson.name = this.initLists[i].typename;
+            navArr.push(navjson);
+        }
+        this.uniqueNavlist(navArr);
+    }
+    uniqueNavlist(navArr){
+        // console.log(navArr,'navArr');
+        this.navlists.length = 0;
+        for(let i=0; i<navArr.length;i++){
+            var flag = false;
+            if(this.navlists.length){
+                for(let j=0; j<this.navlists.length;j++){
+                    if(navArr[i].type == this.navlists[j].type){
+                        flag = true;
+                        break;
+                    }
+                }
+                if(!flag){
+                    this.navlists.push(navArr[i]);
+                }
+            }else{
+                this.navlists.push(navArr[i]);
+            }
+        }
+    }
+    getUserAttentOid(pid){
+        var oid,arr = this.$parent.globalData.curUserAttentJsonArr;
+        for(var i=0; i<arr.length; i++){
+            if(arr[i].pid == pid){
+                oid =  arr[i].oid;
+                break;
+            }
+        }
+        return oid;
+    }
+    angle(start, end) {
+       var _X = end.X - start.X,
+         _Y = end.Y - start.Y
+       //返回角度 /Math.atan()返回数字的反正切值
+       return 360 * Math.atan(_Y / _X) / (2 * Math.PI);
+    }
+    showLoading(){
+        wx.showLoading({
+            title : '请稍等...'
+        })
+    }
+    hideLoading(){
+        setTimeout(function(){
+          wx.hideLoading()
+        },200)
+    }
+    delFromArr(targetArr,delItems){
+        for(let i=0; i<delItems.length; i++){
+            var delIndex = targetArr.indexOf(delItems[i]);
+            if(delIndex!==-1){
+                targetArr.splice(delIndex,1);
+            }
+        }
+        return targetArr;
+    }
+}
+</script>
+
+<style lang="scss">
+@import "../sass/_mixin.scss";
+.scrollPage{
+    width: 100%;
+    height: 100vh;
+}
+.attention{
+    overflow-x: hidden;
+}
+.attention-body{
+    padding-top: 81rpx;
+}
+.attention-item{
+    margin-left: -70rpx;
+    margin-right: -120rpx;
+    display: flex;
+    padding: 10rpx 0;
+    background: #fff;
+    transition: all .3s linear;
+    border-bottom: 1rpx solid #efefef;
+    &:last-child{
+        border-bottom: 0;
+    }
+    &.active{
+        transform: translateX(70rpx);
+    }
+    &.delete{
+        transform: translateX(-120rpx);
+    }
+}
+.item-att-select{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 50rpx;
+    padding: 10rpx;
+    &.active{
+        .select-icon{
+            background: #fff;
+            color: #fff;
+            border: 10rpx solid $themeColor;
+        }
+    }
+}
+.item-att-main{
+    flex: 1;
+    display: flex;
+    background: #fff;
+}
+.item-att-l{
+    padding: 0 20rpx;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.item-att-r{
+    width: 120rpx;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: $red;
+    color: #fff;
+    font-size: 28rpx;
+}
+
+.item-att-title{
+    margin-top: 10rpx;
+    font-size: 30rpx;
+    color: $fontBlack;
+    @include text-overflow(2);
+    text{
+        margin-right: 10rpx;
+        padding: 0 5rpx;
+        font-size: 22rpx;
+        border: 1rpx solid $themeColor;
+        color: $themeColor;
+    }
+}
+.item-att-body{
+    display: flex;
+}
+.item-att-info{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: $gray;
+    font-size: 26rpx;
+    view{
+        padding: 5rpx 0;
+        @include text-overflow(1);
+    }
+    .item-att-time{
+        display: flex;
+        justify-content: space-between;
+        text{
+            flex: 1;
+            @include text-overflow(1);
+            &:last-child{
+                padding-left: 5rpx;
+                text-align: right;
+            }
+        }
+    }
+}
+.item-att-price{
+    color: $red;
+    text{
+        font-size: 34rpx;
+    }
+}
+
+.item-att-btn{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 156rpx;
+    padding: 0 20rpx;
+    view{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 140rpx;
+        height: 50rpx;
+        font-size: 26rpx;
+        border: 1.5rpx solid $themeColor;
+        color: $themeColor;
+        border-radius: 4rpx;
+        box-sizing: border-box;
+        margin: 10rpx;
+        image{
+            width: 25rpx;
+            height: 25rpx;
+            margin-right: 10rpx;
+            vertical-align: middle;
+        }
+    }
+    .item-att-type{
+        width: 80rpx;
+        height: 80rpx;
+        border: 0;
+        image{
+            width: 60rpx;
+            height: 60rpx;
+        }
+    }
+}
+.attention-btn{
+    position:fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    height: 80rpx;
+    font-size: 28rpx;
+    color: $fontBlack;
+    background: #fff;
+}
+.select-l{
+    flex: 3;
+    display: flex;
+    align-items: center;
+    padding-left: 20rpx;
+    height: 100%;
+}
+.select-m{
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: $fontBlack;
+    height: 100%;
+    background: #ddd;
+}
+.select-icon{
+    display: inline-block;
+    width: 30rpx;
+    height: 30rpx;
+    border: 1rpx solid $gray;
+    margin-right: 10rpx;
+    background: #fff;
+    box-sizing: border-box;
+    border-radius: 15rpx;
+    &.active{
+        background: #fff;
+        color: #fff;
+        border: 10rpx solid $themeColor;
+    }
+}
+.select-r{
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    background: $gray;
+    color: #fff;
+    &.active{
+        background: $red;
+    }
+}
+.attention-btns{
+    position: fixed;
+    right: 20rpx;
+    bottom: 70rpx;
+    width: 80rpx;
+    image{
+        width: 80rpx;
+        height: 80rpx;
+        opacity: .6;
+        margin-top: 10rpx;
+    }
+}
+</style>

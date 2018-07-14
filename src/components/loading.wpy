@@ -1,0 +1,28 @@
+<template>
+   <view class="loading">
+       <view hidden="{{!loading}}">加载中...</view>
+       <view hidden="{{loading || !loadend}}">做人做事要有底线~</view>
+   </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+export default class Loading extends wepy.component{
+    props = {
+        'loading' : Boolean,
+        'loadend' : Boolean
+    }
+}
+</script>
+
+<style lang="scss">
+@import "../sass/_mixin.scss";
+.loading{
+    color: $gray;
+    font-size: 18rpx;
+    text-align: center;
+    view{
+        padding: 40rpx;
+    }
+}
+</style>

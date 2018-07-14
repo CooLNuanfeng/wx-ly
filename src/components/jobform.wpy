@@ -1,0 +1,211 @@
+<template>
+    <view class="job-form">
+        <view class="lable-control">
+            <text>职位: <text class="label-require">*</text></text>
+            <input type="text" placeholder="请输入职位名称" maxlength="20" placeholder-class="input-placeholder" value="{{jobname}}" @input="jobChange">
+        </view>
+        <view class="lable-control">
+            <text>月薪: <text class="label-require">*</text></text>
+            <input type="digit" placeholder="请输入月薪(单位: 元起/月)" maxlength="10" placeholder-class="input-placeholder" value="{{jobprice}}" @input="priceChange">
+        </view>
+        <view class="lable-control">
+            <text>职位类型: <text class="label-require">*</text></text>
+            <view class="label-picker">
+                <image src="../images/arrow.png"></image>
+                <picker @change="officeChange" value="{{officeIndex}}" range="{{officesJson}}" range-key="name">
+                    <view class="picker">{{officesJson[officeIndex]['name']}}</view>
+                </picker>
+            </view>
+        </view>
+        <view class="lable-control">
+            <text>学历: <text class="label-require">*</text></text>
+            <view class="label-picker">
+                <image src="../images/arrow.png"></image>
+                <picker @change="eduChange" value="{{eduIndex}}" range="{{eduJson}}" range-key="name">
+                    <view class="picker">{{eduJson[eduIndex]['name']}}</view>
+                </picker>
+            </view>
+        </view>
+        <view class="lable-control">
+            <text>人数: <text class="label-require">*</text></text>
+            <input type="number" placeholder="请输入招聘人数" maxlength="4" placeholder-class="input-placeholder" value="{{number}}" @input="jobNumChange">
+        </view>
+        <view class="lable-control">
+            <text>地址: <text class="label-require">*</text></text>
+            <input type="text" placeholder="请输入招聘公司地址" maxlength="50" placeholder-class="input-placeholder" value="{{address}}" @input="addressChange">
+        </view>
+        <view class="lable-control-list">
+            <view class="label-flex">
+                <text>岗位职责: <text class="label-small">(请分条例填写，点右侧添加条例)</text></text>
+                <view><image src="../images/add-item.png" @tap="addItem('duty')"></image></view>
+            </view>
+            <view class="label-add" wx:for="{{dutyArr}}" wx:key="">
+                <input type="text" placeholder="请分条输入相关内容" maxlength="150" placeholder-class="input-placeholder" value="{{item}}" @input="itemInput('duty',{{index}})">
+                <view wx:if="{{index>0}}" @tap="deleteItem('duty',{{index}})"><image src="../images/delete-item.png"></image></view>
+            </view>
+        </view>
+        <view class="lable-control-list">
+            <view class="label-flex">
+                <text>职位要求: <text class="label-small">(请分条例填写，点右侧添加条例)</text></text>
+                <view><image src="../images/add-item.png" @tap="addItem('claim')"></image></view>
+            </view>
+            <view class="label-add" wx:for="{{claimArr}}" wx:key="">
+                <input type="text" placeholder="请分条输入相关内容" maxlength="150" placeholder-class="input-placeholder" value="{{item}}" @input="itemInput('claim',{{index}})">
+                <view wx:if="{{index>0}}" @tap="deleteItem('claim',{{index}})"><image src="../images/delete-item.png"></image></view>
+            </view>
+        </view>
+        <view class="lable-control">
+            <text>公司名称: <text class="label-require">*</text></text>
+            <input type="text" placeholder="请输入招聘公司名称" maxlength="50" placeholder-class="input-placeholder" value="{{company}}" @input="companyNameChange">
+        </view>
+        <view class="lable-control">
+            <text>公司人数: <text class="label-require">*</text></text>
+            <view class="label-picker">
+                <image src="../images/arrow.png"></image>
+                <picker @change="pickerChange" value="{{index}}" range="{{companyNumber}}">
+                    <view class="picker">{{companyNumber[curIndex]}}</view>
+                </picker>
+            </view>
+        </view>
+        <view class="lable-control">
+            <text>公司简介: </text>
+            <textarea class="label-textarea" cols="30" rows="10" maxlength="500" placeholder="请输入公司简介,500字内" placeholder-class="input-placeholder" @input="companyInfoChange"></textarea>
+        </view>
+
+        <view class="publish-notice">工作环境展示</view>
+        <uploadform @uploadEnd.user="uploadChange" @uploadDel.user="uploadChange"></uploadform>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import imgUploadForm from './imgupload';
+
+export default class JobForm extends wepy.component{
+    data = {
+        'jobname' : '', //require
+        'jobprice': '', //require
+        'number' : '', //require
+        'address': '',//require
+        'dutyArr' : [''],
+        'claimArr': [''],
+        'companyName' : '', //require 公司名称
+        'curIndex' : 0,  //公司规模索引
+        'companyNumber': ['100人以内','100-1000人','1000人以上'],
+        'companyInfo' : '', //公司简介
+        'officeIndex' : 0,
+        'officesJson' : [ //职位分类
+            {'id':'001','name':'餐饮/酒店'},
+            {'id':'002','name':'销售/客服'},
+            {'id':'003','name':'物业/安保'},
+            {'id':'004','name':'教育/培训'},
+            {'id':'005','name':'行政/人事'},
+            {'id':'006','name':'超市/零售'},
+            {'id':'007','name':'美发/按摩'},
+            {'id':'008','name':'技工/普工'},
+            {'id':'009','name':'物流/仓储'},
+            {'id':'010','name':'化工/能源'},
+            {'id':'011','name':'服装/纺织'},
+            {'id':'012','name':'电气/机械'},
+            {'id':'013','name':'建筑/房产'}
+        ],
+        'eduIndex' : 0,
+        'eduJson' : [ //学历分类
+            {'id':'001','name':'不限'},
+            {'id':'002','name':'初/高中以上'},
+            {'id':'003','name':'专科以上'},
+            {'id':'004','name':'本科以上'},
+            {'id':'005','name':'硕士研究生以上'},
+        ],
+        'uploadImgs' : null, //上传图片地址
+    };
+    components = {
+        'uploadform' : imgUploadForm
+    };
+    methods = {
+        jobChange(evt){
+            this.jobname = evt.detail.value;
+        },
+        priceChange(evt){
+            this.jobprice = evt.detail.value;
+        },
+        jobNumChange(evt){
+            this.number = evt.detail.value;
+        },
+        addressChange(evt){
+            this.address = evt.detail.value;
+        },
+        companyNameChange(evt){
+            this.companyName = evt.detail.value;
+        },
+        companyInfoChange(evt){
+            this.companyInfo = evt.detail.value;
+        },
+
+
+        addItem(type){
+            if(type == 'duty'){
+                this.dutyArr.push('');
+            }
+            if(type == 'claim'){
+                this.claimArr.push('');
+            }
+        },
+        itemInput(type,index,evt){
+            if(type == 'duty'){
+                this.dutyArr[index] = evt.detail.value;
+            }
+            if(type == 'claim'){
+                this.claimArr[index] = evt.detail.value;
+            }
+        },
+        deleteItem(type,index){
+            if(type == 'duty'){
+                this.dutyArr.splice(index,1);
+            }
+            if(type == 'claim'){
+                this.claimArr.splice(index,1);
+            }
+        },
+        pickerChange(evt){
+            // console.log(evt);
+            this.curIndex = evt.detail.value;
+        },
+        officeChange(evt){
+            this.officeIndex = evt.detail.value;
+            // console.log(this.officesJson[this.officeIndex].id);
+        },
+        eduChange(evt){
+            this.eduIndex = evt.detail.value;
+            // console.log(this.eduJson[this.eduIndex].id);
+        },
+        uploadChange(imgs){
+            // console.log('upload change');
+            this.uploadImgs = imgs;
+        }
+    };
+    events = {
+        jobFetch(){ //组织用户填写数据
+            var json = {
+                'jobname' : this.jobname,  //职位 require
+                'jobprice' : this.jobprice, //月薪 require
+                'jobType' : this.officesJson[this.officeIndex], //职位类型 require
+                'eduType' : this.eduJson[this.eduIndex], //学历类型 require
+                'number' : this.number, //招聘人数 require
+                'address' : this.address, //地址 require
+                'dutyArr' : this.dutyArr, //职责
+                'claimArr' : this.claimArr, //要求
+                'companyName' : this.companyName, //公司名称 require
+                'companyNumber' : this.companyNumber[this.curIndex], //公司人数 require
+                'companyInfo' : this.companyInfo, //公司简介
+                'images' : this.uploadImgs  //公司图片
+            };
+            this.$emit('getJobForm',json);
+        }
+    };
+}
+</script>
+
+<style lang="scss">
+
+</style>

@@ -1,0 +1,79 @@
+<template>
+    <scroll-view scroll-x class="nav-container">
+        <view class="{{current == 'all'? 'active':''}}" @tap="change('all')">全 部</view>
+        <view wx:for="{{navlist}}" wx:key class="{{current == item.name ? 'active':''}}" @tap="change({{item}})">{{item.name}}</view>
+    </scroll-view>
+</template>
+
+<script>
+import wepy from 'wepy';
+
+export default class NavBar extends wepy.component{
+    data = {
+        current : 'all'
+    }
+    props = {
+        navlist : Array
+    };
+    onLoad(){
+        // console.log(this.navlist,'nav');
+    }
+    watch = {
+        navlist(newVal,oldVal){
+            if(newVal && oldVal && newVal.length !== oldVal.length){
+                this.current = 'all';
+                this.$apply();
+                this.$emit('navChange','all');
+                // console.log('change nav current',this.current);
+            }
+        }
+    }
+    methods = {
+        change(item){
+            if(item == 'all'){
+                this.current = 'all';
+            }else{
+                this.current = item.name;
+            }
+            this.$emit('navChange',item);
+        }
+    }
+}
+</script>
+
+<style lang="scss">
+@import "../sass/_mixin.scss";
+.nav-container{
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    height: 81rpx;
+    white-space: nowrap;
+    padding: 15rpx 20rpx;
+    background: #fff;
+    z-index: 5;
+    // border-bottom: 1rpx solid #ebebeb;
+    box-sizing: border-box;
+    view{
+        display: inline-flex;
+        height: 50rpx;
+        justify-content: center;
+        align-items: center;
+        margin-right: 15rpx;
+        padding: 0 10rpx;
+        font-size: 30rpx;
+        color: $fontBlack;
+        &:last-child{
+            margin-right: 0;
+        }
+        &.active{
+            border-radius: 4rpx;
+            background: $themeColor;
+            color: #fff;
+        }
+    }
+}
+</style>

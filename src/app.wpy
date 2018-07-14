@@ -1,0 +1,203 @@
+<style lang="scss">
+@import "./sass/common.scss";
+page{
+    background: #f4f4f4;
+}
+.container{
+    min-height: 100vh;
+}
+.warp{
+    min-height: 71vh;
+}
+</style>
+
+<script>
+import wepy from 'wepy'
+import AV from './utils/av-weapp-min.js';
+
+
+//themeColor
+var myConfig = {
+    themeColor : '#ABC327',
+    themeimg : 'green/',
+    cityname : '智慧莱阳',
+    cityid : '370682',
+    ads : true,
+}
+
+export default class extends wepy.app {
+  config = {
+    pages: [
+      'pages/index',
+      'pages/autho',
+      'pages/attention',
+      'pages/user',
+      'pages/category',
+      'pages/detail',
+      'pages/publish',
+      'pages/about',
+      'pages/success',
+      'pages/preview',
+      'pages/mypublish',
+      'pages/contact',
+      'pages/search',
+    ],
+    window: {
+      backgroundTextStyle: 'light',
+      navigationBarBackgroundColor: '#fff',
+      navigationBarTitleText: '智慧莱阳',
+      navigationBarTextStyle: 'black'
+     },
+     tabBar: {
+          color: '#999',
+          selectedColor : '#ABC327', //themeColor
+          backgroundColor : '#fff',
+          list: [
+              {
+                  "pagePath": "pages/index",
+                  "selectedIconPath": "images/green/index.png", //themeColor
+                  "iconPath": "images/index_disable.png",
+                  "text": "首页"
+              },
+              {
+                  "pagePath": "pages/attention",
+                  "selectedIconPath": "images/green/attention.png", //themeColor
+                  "iconPath": "images/attention_disable.png",
+                  "text": "关注"
+              },
+              {
+                  "pagePath": "pages/user",
+                  "selectedIconPath": "images/green/user.png", //themeColor
+                  "iconPath": "images/user_disable.png",
+                  "text": "我的"
+              }
+          ]
+      }
+  }
+
+  globalData = {
+    ads : myConfig.ads, //是否有广告位
+    userInfo: null,  //用户信息
+    userNick : null, //用户昵称
+    cityname : myConfig.cityname,  //城市名称
+    cityid : myConfig.cityid, //城市 id
+    themeimg : myConfig.themeimg, //主题路径
+    previewData : null, //预览数据
+    domain : 'http://oyo2k3vrc.bkt.clouddn.com', //七牛云上传图片的访问域名
+    gridsArr : [  //所有分类
+        {"type":"job","name":"招聘信息"},
+        {"type":"sale","name":"打折促销"},
+        {"type":"home","name":"房屋租售"},
+        {"type":"car","name":"车辆交易"},
+        {"type":"find","name":"寻人寻物"},
+        {"type":"food","name":"美食推荐"},
+        {"type":"friend","name":"良缘在线"},
+        {"type":"pet","name":"宠物领养"},
+        {"type":"edu","name":"教育培训"},
+        {"type":"other","name":"其他消息"},
+    ],
+    curUserAttention : [], //当前用户的所有关注
+    curUserAttentJsonArr : [], //当前用户的所有关注 json
+    curUserPublishNum : 0, //当前用户所有发布
+    refresh : false, //增删 是否刷新
+    attrefresh : false, //关注 是否刷新
+    previewBack : false, //是否 预览返回发布
+  }
+
+  constructor () {
+    super()
+  }
+
+  onLaunch() {
+
+  }
+  //读取用户相关发布信息
+  getCurrentUserNotice(cb){
+      var vm = this;
+      AV.init({
+       appId: 'jrFmFaxGJEJpF5hjhUkbiGtJ-gzGzoHsz',
+       appKey: 'k8F2aQ6iRTCL0ULe6c8a4sRg',
+      });
+      AV.User.loginWithWeapp().then(user => {
+          var uid;
+          vm.globalData.userInfo = user.toJSON();
+          // console.log(user.toJSON(),'av');
+          uid = vm.globalData.userInfo.objectId;
+          vm.findUserAttentions(uid);
+          vm.findUserPublishNumber(uid);
+          cb && cb();
+      }).catch(function(err){
+          // console.error
+      });
+  }
+
+
+  //用户发布
+  findUserPublishNumber(uid){
+      var listsQuery = new AV.Query('NewsList'),vm = this;
+      // console.log(uid,'uid');
+      //查询用户关发布数,减少api请求
+      listsQuery.equalTo('uid',uid);
+      listsQuery.count().then(function(count){
+          vm.globalData.curUserPublishNum = count;
+          // console.log(vm.globalData.curUserPublishNum,'curUserPublishNum');
+      }).catch(function(err){
+          // console.log(err);
+      });
+  }
+
+  //用户关注
+  findUserAttentions(uid){
+      var userAttentQuery = new AV.Query('UserAttentions'),vm = this;
+      // console.log(uid,'uid');
+      //查询用户关注数组,减少api请求
+      userAttentQuery.equalTo('uid',uid);
+      userAttentQuery.find().then(function(res){
+          res.forEach(function(item,index){
+              var json = {};
+              json.oid = item.id;
+              json.pid = item.attributes.pageid;
+              vm.globalData.curUserAttentJsonArr.push(json);
+              vm.globalData.curUserAttention.push(item.attributes.pageid);
+          });
+          // console.log(vm.globalData.curUserAttention,'curUserAttention');
+          // console.log(vm.globalData.curUserAttentJsonArr,'curUserAttentJsonArr');
+      }).catch(function(err){
+          // console.log(err);
+      });
+  }
+
+  //用户信息 old 版
+  // getUserInfo(cb) {
+  //   const that = this;
+  //   if (this.globalData.userNick) {
+  //     return this.globalData.userNick;
+  //   }
+  //   wepy.getUserInfo({
+  //     success (res) {
+  //       that.globalData.userNick = res.userInfo;
+  //       cb && cb(res.userInfo);
+  //     }
+  //   })
+  // }
+
+  timeFormate(utc){
+    var oDate = new Date(utc);
+    var year = oDate.getFullYear();
+    var month = oDate.getMonth();
+    var day = oDate.getDate();
+    var hour = oDate.getHours();
+    var min = oDate.getMinutes();
+    var sec = oDate.getSeconds();
+    return year+'-'+this.toDouble(month+1)+'-'+this.toDouble(day)+' '+this.toDouble(hour)+':'+this.toDouble(min);
+  }
+  toDouble(number){
+      if(number<10){
+          return '0'+number;
+      }else{
+          return number;
+      }
+  }
+
+}
+</script>

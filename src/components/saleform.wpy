@@ -1,0 +1,162 @@
+<template>
+    <view class="sale-form">
+        <view class="lable-control">
+            <text>起始日期: <text class="label-require">*</text></text>
+            <view class="label-picker">
+                <image src="../images/arrow.png"></image>
+                <picker mode="date" @change="startdateChange" value="{{startdate}}" start="{{startdate}}">
+                    <view class="picker">{{startdate}}</view>
+                </picker>
+            </view>
+        </view>
+        <view class="lable-control">
+            <text>截止日期: <text class="label-require">*</text></text>
+            <view class="label-picker">
+                <image src="../images/arrow.png"></image>
+                <picker mode="date" @change="enddateChange" value="{{enddate}}" start="{{enddate}}">
+                    <view class="picker">{{enddate}}</view>
+                </picker>
+            </view>
+        </view>
+        <view class="lable-control">
+            <text>开始时间: <text class="label-require">*</text></text>
+            <view class="label-picker">
+                <image src="../images/arrow.png"></image>
+                <picker mode="time" @change="starttimeChange" value="{{starttime}}">
+                    <view class="picker">{{starttime}}</view>
+                </picker>
+            </view>
+        </view>
+        <view class="lable-control">
+            <text>结束时间: <text class="label-require">*</text></text>
+            <view class="label-picker">
+                <image src="../images/arrow.png"></image>
+                <picker mode="time" @change="endtimeChange" value="{{endtime}}">
+                    <view class="picker">{{endtime}}</view>
+                </picker>
+            </view>
+        </view>
+        <view class="lable-control">
+            <text>活动地点: <text class="label-require">*</text></text>
+            <input type="text" placeholder="请输入活动地点" maxlength="50" placeholder-class="input-placeholder" value="{{address}}" @input="addressChange">
+        </view>
+        <view class="lable-control">
+            <text>活动类型: <text class="label-require">*</text></text>
+            <view class="label-picker">
+                <image src="../images/arrow.png"></image>
+                <picker @change="saleChange" value="{{saleIndex}}" range="{{saleJson}}" range-key="name">
+                    <view class="picker">{{saleJson[saleIndex]['name']}}</view>
+                </picker>
+            </view>
+        </view>
+        <view class="lable-control-list">
+            <view class="label-flex">
+                <text>活动内容: <text class="label-small">(请分条例填写，点右侧添加条例)</text></text>
+                <view><image src="../images/add-item.png" @tap="addItem()"></image></view>
+            </view>
+            <view class="label-add" wx:for="{{activityArr}}" wx:key="">
+                <input type="text" placeholder="请分条输入相关内容" maxlength="150" placeholder-class="input-placeholder" value="{{item}}" @input="itemInput({{index}})">
+                <view wx:if="{{index>0}}" @tap="deleteItem({{index}})"><image src="../images/delete-item.png"></image></view>
+            </view>
+        </view>
+        <view class="publish-notice">活动图片展示</view>
+        <uploadform @uploadEnd.user="uploadChange" @uploadDel.user="uploadChange"></uploadform>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import imgUploadForm from './imgupload';
+
+export default class SaleForm  extends wepy.component{
+    data = {
+        'startdate' : '',
+        'enddate' : '',
+        'starttime' : '08:00',
+        'endtime' : '18:00',
+        'address' : '',
+        'activityArr' : [''],
+        'saleIndex' : 0,
+        'saleJson' : [
+            {'id':'001','name':'超市'},
+            {'id':'002','name':'服饰'},
+            {'id':'003','name':'餐饮'},
+            {'id':'004','name':'其他'},
+        ],
+        'uploadImgs' : null,
+    };
+    porps = {};
+    components = {
+        'uploadform' : imgUploadForm
+    };
+    methods = {
+        saleChange(evt){
+            this.saleIndex = evt.detail.value;
+        },
+        starttimeChange(evt){
+            this.starttime = evt.detail.value;
+        },
+        endtimeChange(evt){
+            this.endtime = evt.detail.value;
+        },
+        startdateChange(evt){
+            this.startdate = evt.detail.value;
+        },
+        enddateChange(evt){
+            this.enddate = evt.detail.value;
+        },
+        addressChange(evt){
+            this.address = evt.detail.value;
+        },
+        addItem(){
+            this.activityArr.push('');
+        },
+        itemInput(index,evt){
+            this.activityArr[index] = evt.detail.value;
+        },
+        deleteItem(index){
+            this.activityArr.splice(index,1);
+        },
+        uploadChange(imgs){
+            // console.log('upload change');
+            this.uploadImgs = imgs;
+        }
+    };
+    events = {
+        saleFetch(){
+            var json = {};
+            json.startdate = this.startdate;
+            json.enddate = this.enddate;
+            json.starttime = this.starttime;
+            json.endtime = this.endtime;
+            json.address = this.address;
+            json.saleType = this.saleJson[this.saleIndex];
+            json.activityArr = this.activityArr;
+            json.images = this.uploadImgs;
+            this.$emit('getSaleForm',json);
+
+        }
+    };
+    onLoad(){
+        var now = new Date();
+        this.startdate = this.dateFormate(now);
+        this.enddate = this.dateFormate(now);
+    };
+    dateFormate(oDate){
+        var year = oDate.getFullYear();
+        var month = oDate.getMonth() + 1;
+        var day = oDate.getDate();
+        return year + '-' + this.$parent.$parent.toDouble(month) + '-' + this.$parent.$parent.toDouble(day);
+    };
+    // toDouble(number){
+    //     if(number<10){
+    //         return '0'+number;
+    //     }else{
+    //         return number;
+    //     }
+    // }
+}
+</script>
+
+<style lang="scss">
+</style>

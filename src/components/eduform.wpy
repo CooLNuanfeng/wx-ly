@@ -1,0 +1,115 @@
+<template>
+    <view class="car-form">
+        <view hidden="{{typeIndex}}" class="lable-control">
+            <text>开始时间: <text class="label-require">*</text></text>
+            <view class="label-picker">
+                <image src="../images/arrow.png"></image>
+                <picker mode="date" @change="startdateChange"  value="{{startDate}}" start="{{startDate}}">
+                    <view class="picker">{{startDate}}</view>
+                </picker>
+            </view>
+        </view>
+        <view class="lable-control">
+            <text>结束时间: <text class="label-require">*</text></text>
+            <view class="label-picker">
+                <image src="../images/arrow.png"></image>
+                <picker mode="date" @change="enddateChange" value="{{endDate}}" start="{{endDate}}">
+                    <view class="picker">{{endDate}}</view>
+                </picker>
+            </view>
+        </view>
+        <view class="lable-control">
+            <text>培训费用: <text class="label-require">*</text></text>
+            <input type="digit" placeholder="请输入价格(单位:元/人)" maxlength="10" placeholder-class="input-placeholder" value="{{price}}" @input="priceChange">
+        </view>
+        <view class="lable-control">
+            <text>培训地点: <text class="label-require">*</text></text>
+            <input type="text" placeholder="请输入培训地址" maxlength="20" placeholder-class="input-placeholder" value="{{address}}" @input="addressChange">
+        </view>
+
+        <view class="lable-control-list">
+            <view class="label-flex">
+                <text>培训内容: <text class="label-small">(请分条例填写，点右侧添加条例)</text></text>
+                <view><image src="../images/add-item.png" @tap="addItem()"></image></view>
+            </view>
+            <view class="label-add" wx:for="{{eduInfoArr}}" wx:key>
+                <input type="text" placeholder="请分条输入相关内容" maxlength="150" placeholder-class="input-placeholder" value="{{item}}" @input="itemInput({{index}})">
+                <view wx:if="{{index>0}}" @tap="deleteItem({{index}})"><image src="../images/delete-item.png"></image></view>
+            </view>
+        </view>
+        <view class="publish-notice">培训环境展示</view>
+        <uploadform @uploadEnd.user="uploadChange" @uploadDel.user="uploadChange"></uploadform>
+    </view>
+</template>
+
+<script>
+import wepy from 'wepy';
+import imgUploadForm from './imgupload';
+
+export default class EduForm  extends wepy.component{
+    data = {
+        'price' : '',
+        'address' : '',
+        'endDate' : '',
+        'startDate' : '',
+        'eduInfoArr' : [''],
+        'uploadImgs' : null,
+    };
+    components = {
+        'uploadform' : imgUploadForm
+    };
+    methods = {
+        startdateChange(evt){
+            this.startDate = evt.detail.value;
+        },
+        enddateChange(evt){
+            this.endDate = evt.detail.value;
+        },
+        priceChange(evt){
+            this.price = evt.detail.value;
+        },
+        addressChange(evt){
+            this.address = evt.detail.value;
+        },
+        addItem(){
+            this.eduInfoArr.push('');
+        },
+        itemInput(index,evt){
+            this.eduInfoArr[index] = evt.detail.value;
+        },
+        deleteItem(index){
+            this.eduInfoArr.splice(index,1);
+        },
+        uploadChange(imgs){
+            // console.log('upload change');
+            this.uploadImgs = imgs;
+        }
+    };
+    events = {
+        eduFetch(){
+            var json = {};
+            json.price = this.price;
+            json.address = this.address;
+            json.startDate = this.startDate;
+            json.endDate = this.endDate;
+            json.eduInfoArr = this.eduInfoArr;
+            json.images = this.uploadImgs;
+            this.$emit('getEduForm',json);
+        }
+    };
+    onLoad(){
+        this.dateFormate();
+    };
+    dateFormate(){
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = now.getMonth() + 1;
+        var day = now.getDate();
+        this.startDate = year + '-' + this.$parent.$parent.toDouble(month) + '-' + this.$parent.$parent.toDouble(day);
+        this.endDate = year + '-' + this.$parent.$parent.toDouble(month) + '-' + this.$parent.$parent.toDouble(day);
+    }
+}
+</script>
+
+<style lang="scss">
+</style>
