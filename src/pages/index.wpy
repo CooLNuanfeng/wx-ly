@@ -1,7 +1,7 @@
 <template>
   <view class="container">
       <view class="warp scrollPage">
-          <location @search.user="searchFn"/>
+          <location @search.user="searchFn"></location>
           <view class="grids-warp">
               <view class="{{gridsFixed ? 'grid-fixed':''}}">
                   <gird></gird>
@@ -117,11 +117,7 @@
               });
           },
           publish(){
-              if(!this.userInfo){
-                  wx.navigateTo({
-                      url : 'autho'
-                  });
-              }else{
+              if(this.checklogin()){
                   wx.navigateTo({
                       url : 'publish'
                   });
@@ -150,20 +146,11 @@
           // }
       };
       onLoad(){
-          var userinfo = wx.getStorageSync('userInfo');
-          // console.log(userInfo);
-          this.checklogin();
-          if(!userinfo){
-              console.log('go autho');
-              wx.navigateTo({
-                  url : 'autho'
-              });
-              return;
-          }else{
-              this.$parent.globalData.userInfo = userinfo;
-              this.$parent.globalData.userNick = userinfo;
+          var usernick = this.checklogin()
+          if(usernick){
+              this.$parent.globalData.userNick = usernick;
           }
-
+          console.log(this.$parent.globalData);
           this.adshow = this.$parent.globalData.ads;
           this.themeimg = this.$parent.globalData.themeimg;
           this.gridsArr = this.$parent.globalData.gridsArr;
@@ -233,6 +220,7 @@
                   url : 'autho'
               });
           }
+          return userinfo;
       }
   }
 </script>

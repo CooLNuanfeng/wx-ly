@@ -1,6 +1,6 @@
-<template lang="wxml">
+<template>
   <view class="location-warp">
-      <Text class="city-name">{{cityname}}</Text>
+      <view><text class="city-name">{{cityname}}</text></view>
       <view class="search-box">
           <image src="../images/search.png" class="icon-search" @tap="search"></image>
           <input type="text" class="city-search" placeholder-style="color:#ccc" placeholder="请输入搜索关键字"  @input="input" value="{{searchText}}"/>
