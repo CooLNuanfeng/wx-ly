@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <scroll-view scroll-x class="nav-container">
         <view class="{{current == 'all'? 'active':''}}" @tap="change('all')">全 部</view>
         <view wx:for="{{navlist}}" wx:key class="{{current == item.name ? 'active':''}}" @tap="change({{item}})">{{item.name}}</view>

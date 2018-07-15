@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view class="other-form">
         <view class="lable-control-list">
             <view class="label-flex">

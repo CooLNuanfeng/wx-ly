@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view class="grids">
         <view class="grids-flex">
             <view wx:for="{{gridsArr}}" wx:if="{{index<5}}" wx:key class="grids-item" @tap="tap({{item.type}},{{item.name}})">
@@ -65,6 +65,7 @@ export default class Grid  extends wepy.component{
     onLoad(){
          this.themeimg = this.$parent.$parent.globalData.themeimg;
          this.gridsArr = this.$parent.$parent.globalData.gridsArr;
+         this.$apply();
     }
 }
 </script>

@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view class="ad-container">
         <view class="ad-warp">
             <swiper class="ad-swiper" autoplay="true" interval="3000" duration="500">

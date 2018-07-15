@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view class="car-form">
         <view hidden="{{typeIndex}}" class="lable-control">
             <text>开始时间: <text class="label-require">*</text></text>

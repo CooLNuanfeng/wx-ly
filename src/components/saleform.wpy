@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view class="sale-form">
         <view class="lable-control">
             <text>起始日期: <text class="label-require">*</text></text>

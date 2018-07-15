@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view class="home-form">
         <view class="lable-control">
             <text>房屋地址: <text class="label-require">*</text></text>

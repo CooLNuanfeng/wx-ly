@@ -1,6 +1,6 @@
-<template>
+<template lang="wxml">
   <view class="container">
-      <view class="warp scrollPage">
+      <scroll-view style="height:100%;" scroll-y="true" class="warp scrollPage" @scroll="scroll">
           <location @search.user="searchFn"></location>
           <view class="grids-warp">
               <view class="{{gridsFixed ? 'grid-fixed':''}}">
@@ -66,7 +66,7 @@
               <v-loading :loading.sync="loading" :loadend.sync="loadend"></v-loading>
           </view>
           <footer/>
-      </view>
+      </scroll-view>
       <view class="publish-btn">
           <image src="../images/help.png" @tap="contact"></image>
           <image src="../images/publish.png" @tap="publish"></image>
@@ -133,31 +133,30 @@
                   message: '请输入搜索内容',
               });
           },
-          // scroll(ev){
-          //     if(ev.detail.scrollTop > 140){
-          //         this.gridsFixed = true;
-          //     }else{
-          //         this.gridsFixed = false;
-          //     }
-          //     // if(ev.detail.scrollTop < -100){
-          //     //     this.fetch();
-          //     // }
-          //     console.log('scroll',ev.detail.scrollTop);
-          // }
+          scroll(ev){
+              if(ev.detail.scrollTop > 140){
+                  this.gridsFixed = true;
+              }else{
+                  this.gridsFixed = false;
+              }
+              // if(ev.detail.scrollTop < -100){
+              //     this.fetch();
+              // }
+              // console.log('scroll',ev.detail.scrollTop);
+          }
       };
       onLoad(){
-          var usernick = this.checklogin()
+          var usernick = this.checklogin();
+          console.log(usernick);
           if(usernick){
               this.$parent.globalData.userNick = usernick;
+              this.adshow = this.$parent.globalData.ads;
+              this.themeimg = this.$parent.globalData.themeimg;
+              this.gridsArr = this.$parent.globalData.gridsArr;
+              this.$parent.getCurrentUserNotice(function(){
+                  this.fetch();
+              });
           }
-          console.log(this.$parent.globalData);
-          this.adshow = this.$parent.globalData.ads;
-          this.themeimg = this.$parent.globalData.themeimg;
-          this.gridsArr = this.$parent.globalData.gridsArr;
-          this.$parent.getCurrentUserNotice(function(){
-              this.fetch();
-          })
-
       };
       onShow(){
           var vm = this;
@@ -168,13 +167,13 @@
               vm.$parent.globalData.refresh = false;
           }
       };
-      onPageScroll(ev){
-          if(ev.scrollTop > 140){
-              this.gridsFixed = true;
-          }else{
-              this.gridsFixed = false;
-          }
-      };
+      // onPageScroll(ev){
+      //     if(ev.scrollTop > 140){
+      //         this.gridsFixed = true;
+      //     }else{
+      //         this.gridsFixed = false;
+      //     }
+      // };
       onPullDownRefresh(){
           this.fetch();
       };

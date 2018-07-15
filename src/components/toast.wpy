@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view hidden="{{hidden}}" class="{{!load ? 'toast':'toast load'}}">{{infoObj.message}}</view>
 </template>
 

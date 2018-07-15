@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view class="list-contaier">
         <view wx:for="{{lists}}" wx:key class="list-flex" @tap="goDetail({{item.id}})">
             <view class="list-title">

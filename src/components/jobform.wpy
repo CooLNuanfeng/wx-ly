@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view class="job-form">
         <view class="lable-control">
             <text>职位: <text class="label-require">*</text></text>

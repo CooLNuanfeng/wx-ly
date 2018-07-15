@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view class="swiper-container" wx:if="{{imgUrls}}">
         <swiper class="swiper" indicator-dots="{{dots}}" indicator-color="rgba(255,255,255,.5)" indicator-active-color="#ffffff"
           autoplay="{{autoplay}}" interval="3000" duration="500">

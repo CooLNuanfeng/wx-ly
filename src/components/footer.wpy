@@ -1,4 +1,4 @@
-<template >
+<template lang="wxml">
     <view class="footer">欢迎来到 {{cityname}}</view>
 </template>
 
@@ -11,6 +11,7 @@ export default class Footer extends wepy.component{
     onLoad(){
         // console.log(this.$parent.$parent.globalData);
         this.cityname = this.$parent.$parent.globalData.cityname;
+        this.$apply();
     }
 }
 </script>

@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view class="empty-container">
         <view wx:if="{{status==0}}" class="empty-news">
             <view class="empty-img">

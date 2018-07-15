@@ -21,17 +21,14 @@ export default class Autho extends wepy.page {
         getUserInfo: function(e) {
             let userinfo = e.detail.userInfo;
             this.$parent.globalData.userNick = userinfo;
-            console.log(userinfo,'autho');
+            // console.log(userinfo,'autho');
             this.$parent.getCurrentUserNotice(function(){
-                console.log('callback');
+                // console.log('callback');
                 wx.setStorage({
                     key: "userInfo",
                     data: userinfo,
                     success : function(){
-                        console.log('go index');
-                        wx.navigateTo({
-                            url : 'index'
-                        });
+                        wx.navigateBack();
                     },
                     fail: function(){
                         console.log('fail');

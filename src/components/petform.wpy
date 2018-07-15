@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view class="car-form">
         <view class="lable-control">
             <text>类别: <text class="label-require">*</text></text>

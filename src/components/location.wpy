@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
   <view class="location-warp">
       <view><text class="city-name">{{cityname}}</text></view>
       <view class="search-box">
@@ -33,6 +33,7 @@
         }
         onLoad(){
             this.cityname = this.$parent.$parent.globalData.cityname;
+            this.$apply();
         }
   }
 </script>

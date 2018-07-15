@@ -1,4 +1,4 @@
-<template>
+<template lang="wxml">
     <view class="car-form">
         <view class="lable-control">
             <text>微信号:</text>
